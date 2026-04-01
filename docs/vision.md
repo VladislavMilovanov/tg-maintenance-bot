@@ -108,6 +108,9 @@ flowchart TD
 Первое зафиксированное решение:
 - **ADR-001:** выбор **PostgreSQL** как основной СУБД для MVP и дальнейшего развития системы (`docs/adr/adr-001-database.md`).
 
+Дополнительно для backend bootstrap:
+- **ADR-002:** backend-стек MVP, backend-first границы и thin-clients подход для `bot` и будущего `web` (`docs/adr/adr-002-backend-stack.md`).
+
 ---
 
 ## Целевая структура проекта (логический уровень)

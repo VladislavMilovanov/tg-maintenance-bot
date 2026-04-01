@@ -22,8 +22,9 @@
 
 | Итерация | Название | Цель | Статус | Tasklist |
 |----------|----------|------|--------|----------|
-| 1 | Backend foundation | Сформировать единое backend-ядро и базовые API-контракты | 📋 Planned | [tasklist-backend](tasks/tasklist-backend.md) |
-| 2 | Telegram MVP client | Вывести Telegram-бота на работу через backend API | 📋 Planned | [tasklist-bot](tasks/tasklist-bot.md) |
+| 0 | Backend bootstrap | Зафиксировать backend-стек, ADR и conventions до проектирования API | ✅ Done | [tasklist-backend](tasks/tasklist-backend.md) |
+| 1 | Backend foundation | Сформировать единое backend-ядро и базовые API-контракты | ✅ Done | [tasklist-backend](tasks/tasklist-backend.md) |
+| 2 | Telegram MVP client | Вывести Telegram-бота на работу через backend API | ✅ Done | [tasklist-backend](tasks/tasklist-backend.md) |
 | 3 | Web unified client | Запустить единый web-интерфейс для админа и пользователя | 📋 Planned | [tasklist-web](tasks/tasklist-web.md) |
 | 4 | Monitoring and LLM integrations | Подключить внешние источники мониторинга и интерпретацию через LLM | 📋 Planned | [tasklist-integrations](tasks/tasklist-integrations.md) |
 | 5 | Platform readiness | Довести платформу до эксплуатационной готовности и согласованных правил изменений | 📋 Planned | [tasklist-platform](tasks/tasklist-platform.md) |
@@ -31,6 +32,27 @@
 ---
 
 ## Итерации
+
+### Итерация 0: Backend bootstrap
+
+Цель: зафиксировать технологическую и архитектурную основу backend до проектирования контрактов и каркаса сервиса.
+
+⚡ Параллельность: служит подготовительным слоем для Итерации 1 и не должна смешиваться с реализацией endpoint'ов или рефакторингом клиентов.
+
+Критерии завершения (DoD):
+- выбран backend-стек и закреплен в отдельном ADR;
+- введены conventions для backend-first структуры и инженерных команд;
+- backend-tasklist явно связывает задачу 01 с bootstrap-итерацией.
+
+Связь с tasklist: [docs/tasks/tasklist-backend.md](tasks/tasklist-backend.md)
+
+Полезный результат: команда получает единую технологическую базу и границы ответственности перед началом `Backend foundation`.
+
+Артефакты:
+- `docs/tasks/impl/backend/iteration-0-backend-bootstrap/plan.md`
+- `docs/tasks/impl/backend/iteration-0-backend-bootstrap/summary.md`
+- `docs/adr/adr-002-backend-stack.md`
+- `.cursor/rules/conventions.mdc`
 
 ### Итерация 1: Backend foundation
 
@@ -50,6 +72,14 @@
 Артефакты:
 - `docs/tasks/tasklist-backend.md`
 - `docs/adr/` (новые или обновленные ADR по backend-решениям)
+- `backend/docs/openapi.yaml`
+- `backend/docs/api-contracts.md`
+- `README.md`
+- `.env.example`
+- `docs/tasks/impl/backend/iteration-1-backend-foundation/tasks/task-06-backend-documentation/plan.md`
+- `docs/tasks/impl/backend/iteration-1-backend-foundation/tasks/task-06-backend-documentation/summary.md`
+- `docs/tasks/task-08-quality-and-docs-sync/plan.md`
+- `docs/tasks/task-08-quality-and-docs-sync/summary.md`
 
 ### Итерация 2: Telegram MVP client
 
@@ -62,13 +92,15 @@
 - прямая бизнес-логика в боте минимизирована, обмен идет через backend API;
 - ответы формируются в понятном прикладном языке.
 
-Связь с tasklist: [docs/tasks/tasklist-bot.md](tasks/tasklist-bot.md)
+Связь с tasklist: [docs/tasks/tasklist-backend.md](tasks/tasklist-backend.md) до выделения отдельного `tasklist-bot.md`.
 
 Полезный результат: пользователи получают первый рабочий канал мониторинга с быстрыми ответами.
 
 Артефакты:
-- `docs/tasks/tasklist-bot.md`
-- обновления соглашений взаимодействия bot-backend (при необходимости в `docs/integrations.md`)
+- `docs/tasks/tasklist-backend.md`
+- `docs/tasks/task-07-bot-backend-client/plan.md`
+- `docs/tasks/task-07-bot-backend-client/summary.md`
+- обновления соглашений взаимодействия bot-backend в `docs/integrations.md`
 
 ### Итерация 3: Web unified client
 

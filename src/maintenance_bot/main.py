@@ -4,6 +4,7 @@ import asyncio
 import logging
 import sys
 
+from maintenance_bot.backend_client import BackendClient
 from maintenance_bot.bot import create_bot, create_dispatcher
 from maintenance_bot.config import Settings
 
@@ -19,10 +20,15 @@ def main() -> None:
     )
 
     bot = create_bot(settings)
-    dp = create_dispatcher(settings)
+    backend_client = BackendClient.from_settings(settings)
+    dp = create_dispatcher(settings, backend_client=backend_client)
 
     async def run() -> None:
-        await dp.start_polling(bot)
+        try:
+            await dp.start_polling(bot)
+        finally:
+            await backend_client.aclose()
+            await bot.session.close()
 
     try:
         asyncio.run(run())

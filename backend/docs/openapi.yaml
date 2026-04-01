@@ -1,0 +1,446 @@
+openapi: 3.1.0
+info:
+  title: TG Maintenance Backend API
+  version: 0.1.0
+  summary: MVP contracts for assistant interaction and equipment state recording
+  description: |
+    OpenAPI-first specification for iteration 1 backend foundation.
+    The spec covers two MVP scenarios for thin clients: assistant messages and
+    manual equipment state records.
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+tags:
+  - name: assistant
+    description: Assistant interaction flow for bot and web clients
+  - name: equipment-state-records
+    description: Manual equipment state capture flow
+  - name: service
+    description: Operational service endpoints
+paths:
+  /health:
+    get:
+      tags:
+        - service
+      operationId: getHealth
+      summary: Liveness check
+      responses:
+        '200':
+          description: Service process is alive
+  /ready:
+    get:
+      tags:
+        - service
+      operationId: getReady
+      summary: Readiness check
+      responses:
+        '200':
+          description: Service is ready to accept traffic
+        '503':
+          description: Required dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/assistant/messages:
+    post:
+      tags:
+        - assistant
+      operationId: createAssistantMessage
+      summary: Create assistant response for a client message
+      description: |
+        Accepts a user message from a thin client, optional dialog context, and
+        optional equipment context. Backend owns conversation history handling
+        and LLM invocation. If `conversation_id` is omitted, unknown, or expired,
+        backend creates a new conversation and still returns `200`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssistantMessageRequest'
+      responses:
+        '200':
+          description: |
+            Assistant response created successfully. This includes degraded
+            fallback replies when backend can still return a user-facing answer;
+            such responses must set `meta.fallback_used=true`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssistantMessageResponse'
+        '400':
+          description: |
+            Malformed request that cannot be parsed or processed at HTTP layer,
+            for example invalid JSON payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: |
+            Parsed request is structurally valid, but business or contract
+            validation failed, for example unknown equipment context.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: |
+            LLM service or interpretation flow is unavailable and backend cannot
+            produce even a degraded fallback answer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/equipment-state-records:
+    post:
+      tags:
+        - equipment-state-records
+      operationId: createEquipmentStateRecord
+      summary: Record manual equipment state
+      description: |
+        Accepts a minimal MVP state record for one equipment unit. The contract
+        intentionally excludes nested sensor observations, files, and review
+        workflow. If `idempotency_key` is omitted, every successful request is
+        treated as a new record creation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentStateRecordCreateRequest'
+      responses:
+        '201':
+          description: Equipment state record created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentStateRecordResponse'
+        '400':
+          description: |
+            Malformed request that cannot be parsed or processed at HTTP layer,
+            for example invalid JSON payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Equipment was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            Request conflicts with a previously accepted request that used the
+            same `idempotency_key` with a different payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: |
+            Parsed request is structurally valid, but business or contract
+            validation failed, for example unsupported status value or invalid
+            observed timestamp semantics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    Channel:
+      type: string
+      description: Client channel that calls backend API
+      enum:
+        - telegram
+        - web
+    UserRole:
+      type: string
+      description: Minimal caller role context provided by client
+      enum:
+        - user
+        - admin
+        - operator
+        - engineer
+    EquipmentStatus:
+      type: string
+      description: MVP equipment status enum
+      enum:
+        - normal
+        - warning
+        - critical
+        - unknown
+    ClientUser:
+      type: object
+      additionalProperties: false
+      required:
+        - external_id
+      properties:
+        external_id:
+          type: string
+          minLength: 1
+          description: External user identifier in client system
+          examples:
+            - telegram:123456
+        display_name:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+        role:
+          anyOf:
+            - $ref: '#/components/schemas/UserRole'
+            - type: 'null'
+    AssistantMessagePayload:
+      type: object
+      additionalProperties: false
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          description: Raw user message text
+          examples:
+            - Что с компрессором К-12?
+    EquipmentContext:
+      type: object
+      additionalProperties: false
+      properties:
+        equipment_id:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+        sensor_ids:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          uniqueItems: true
+        sensor_group_ids:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          uniqueItems: true
+      description: |
+        Optional context known by client. Backend may use it to refine the
+        answer, but owns final validation and interpretation.
+    AssistantMessageRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - channel
+        - user
+        - message
+      properties:
+        channel:
+          $ref: '#/components/schemas/Channel'
+        user:
+          $ref: '#/components/schemas/ClientUser'
+        conversation_id:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+          description: |
+            Client-visible conversation identifier. Backend creates a new value
+            when the field is omitted, unknown, or expired.
+        message:
+          $ref: '#/components/schemas/AssistantMessagePayload'
+        equipment_context:
+          anyOf:
+            - $ref: '#/components/schemas/EquipmentContext'
+            - type: 'null'
+    AssistantResponseMeta:
+      type: object
+      additionalProperties: false
+      required:
+        - fallback_used
+      properties:
+        fallback_used:
+          type: boolean
+          description: True when backend returned a degraded response
+        trace_id:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+    ContextUsed:
+      type: object
+      additionalProperties: false
+      properties:
+        equipment_id:
+          type:
+            - string
+            - 'null'
+        sensor_ids:
+          type: array
+          items:
+            type: string
+        sensor_group_ids:
+          type: array
+          items:
+            type: string
+        sources:
+          type: array
+          description: Optional human-readable context sources used by backend
+          items:
+            type: string
+    AssistantMessageResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - answer
+        - conversation_id
+        - meta
+      properties:
+        answer:
+          type: string
+          minLength: 1
+        conversation_id:
+          type: string
+          minLength: 1
+        context_used:
+          anyOf:
+            - $ref: '#/components/schemas/ContextUsed'
+            - type: 'null'
+        meta:
+          $ref: '#/components/schemas/AssistantResponseMeta'
+    StateRecordAuthor:
+      type: object
+      additionalProperties: false
+      required:
+        - external_id
+      properties:
+        external_id:
+          type: string
+          minLength: 1
+          description: External client-side user identifier
+        display_name:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+        role:
+          anyOf:
+            - $ref: '#/components/schemas/UserRole'
+            - type: 'null'
+    EquipmentStateRecordCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - equipment_id
+        - status
+        - observed_at
+        - channel
+        - author
+      properties:
+        equipment_id:
+          type: string
+          minLength: 1
+        status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        comment:
+          type:
+            - string
+            - 'null'
+          maxLength: 2000
+        idempotency_key:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+          maxLength: 128
+          description: |
+            Optional client-supplied key for safe retries. Reusing the same key
+            with a different payload yields `409`; reusing it with the same
+            payload should return the original successful result.
+        observed_at:
+          type: string
+          format: date-time
+        channel:
+          $ref: '#/components/schemas/Channel'
+        author:
+          $ref: '#/components/schemas/StateRecordAuthor'
+    EquipmentStateRecordResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - record_id
+        - equipment_id
+        - status
+        - comment
+        - observed_at
+        - created_at
+        - channel
+        - author
+      properties:
+        record_id:
+          type: string
+          minLength: 1
+        equipment_id:
+          type: string
+          minLength: 1
+        status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        comment:
+          type:
+            - string
+            - 'null'
+        observed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        channel:
+          $ref: '#/components/schemas/Channel'
+        author:
+          $ref: '#/components/schemas/StateRecordAuthor'
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          minLength: 1
+          examples:
+            - validation_error
+          description: |
+            Stable machine-readable error code such as `malformed_request`,
+            `validation_error`, `resource_not_found`, `idempotency_conflict`,
+            or `service_unavailable`.
+        message:
+          type: string
+          minLength: 1
+        details:
+          type:
+            - array
+            - 'null'
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+        trace_id:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+    ErrorDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - field
+        - issue
+      properties:
+        field:
+          type: string
+          minLength: 1
+        issue:
+          type: string
+          minLength: 1
