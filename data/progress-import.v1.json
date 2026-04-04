@@ -1,0 +1,188 @@
+{
+  "schema_version": "progress-import.v1",
+  "system_actors": [
+    {
+      "actor_id": "actor-admin-1",
+      "external_id": "tg-admin-1",
+      "display_name": "Главный инженер",
+      "role": "admin",
+      "activity_scope": "plant-a"
+    },
+    {
+      "actor_id": "actor-engineer-1",
+      "external_id": "tg-engineer-1",
+      "display_name": "Смена 1",
+      "role": "engineer",
+      "activity_scope": "compressor-line"
+    }
+  ],
+  "locations": [
+    {
+      "location_id": "loc-plant-a",
+      "name": "Площадка A",
+      "location_type": "site",
+      "display_order": 10
+    },
+    {
+      "location_id": "loc-compressor-room",
+      "name": "Компрессорная",
+      "location_type": "workshop",
+      "parent_location_id": "loc-plant-a",
+      "display_order": 20
+    }
+  ],
+  "data_sources": [
+    {
+      "source_id": "source-import-v1",
+      "source_type": "import",
+      "name": "progress-import.v1",
+      "origin_semantics": "task-04 sample import",
+      "trust_semantics": "demo verified"
+    },
+    {
+      "source_id": "source-monitoring-main",
+      "source_type": "external_monitoring",
+      "name": "Main monitoring feed",
+      "origin_semantics": "SCADA feed",
+      "trust_semantics": "production telemetry"
+    }
+  ],
+  "equipment": [
+    {
+      "equipment_id": "eq-compressor-1",
+      "name": "Компрессор 1",
+      "equipment_code": "CMP-001",
+      "location_id": "loc-compressor-room",
+      "owner_actor_id": "actor-admin-1",
+      "current_status": "warning"
+    },
+    {
+      "equipment_id": "eq-compressor-2",
+      "name": "Компрессор 2",
+      "equipment_code": "CMP-002",
+      "location_id": "loc-compressor-room",
+      "owner_actor_id": "actor-engineer-1",
+      "current_status": "normal"
+    }
+  ],
+  "sensors": [
+    {
+      "sensor_id": "sensor-vibration-1",
+      "equipment_id": "eq-compressor-1",
+      "name": "Вибрация подшипника",
+      "sensor_type": "vibration",
+      "data_source_id": "source-monitoring-main",
+      "is_primary_for_state": true,
+      "last_observed_at": "2026-04-04T09:15:00Z"
+    },
+    {
+      "sensor_id": "sensor-temp-1",
+      "equipment_id": "eq-compressor-1",
+      "name": "Температура корпуса",
+      "sensor_type": "temperature",
+      "data_source_id": "source-monitoring-main",
+      "last_observed_at": "2026-04-04T09:15:00Z"
+    }
+  ],
+  "sensor_groups": [
+    {
+      "sensor_group_id": "sensor-group-health-1",
+      "equipment_id": "eq-compressor-1",
+      "name": "Основное состояние",
+      "group_type": "health_summary",
+      "data_source_id": "source-monitoring-main",
+      "is_used_for_state_assessment": true
+    }
+  ],
+  "sensor_group_members": [
+    {
+      "sensor_group_id": "sensor-group-health-1",
+      "sensor_id": "sensor-vibration-1"
+    },
+    {
+      "sensor_group_id": "sensor-group-health-1",
+      "sensor_id": "sensor-temp-1"
+    }
+  ],
+  "equipment_state_snapshots": [
+    {
+      "snapshot_id": "snapshot-1",
+      "equipment_id": "eq-compressor-1",
+      "status": "warning",
+      "severity": "medium",
+      "summary": "Рост вибрации выше рабочего коридора",
+      "observed_at": "2026-04-04T09:15:00Z",
+      "effective_at": "2026-04-04T09:15:00Z",
+      "data_source_id": "source-monitoring-main"
+    }
+  ],
+  "equipment_state_snapshot_sensors": [
+    {
+      "snapshot_id": "snapshot-1",
+      "sensor_id": "sensor-vibration-1"
+    },
+    {
+      "snapshot_id": "snapshot-1",
+      "sensor_id": "sensor-temp-1"
+    }
+  ],
+  "equipment_state_snapshot_sensor_groups": [
+    {
+      "snapshot_id": "snapshot-1",
+      "sensor_group_id": "sensor-group-health-1"
+    }
+  ],
+  "equipment_state_records": [
+    {
+      "record_id": "record-1",
+      "equipment_id": "eq-compressor-1",
+      "author_actor_id": "actor-engineer-1",
+      "channel": "telegram",
+      "status": "warning",
+      "comment": "Подтвердил шум и усилил наблюдение.",
+      "observed_at": "2026-04-04T09:20:00Z",
+      "created_at": "2026-04-04T09:21:00Z",
+      "source_type": "manual",
+      "review_status": "pending",
+      "idempotency_key": "import-record-1",
+      "payload_hash": "sample-import-payload-hash-1"
+    }
+  ],
+  "equipment_state_record_sensors": [
+    {
+      "record_id": "record-1",
+      "sensor_id": "sensor-vibration-1"
+    }
+  ],
+  "equipment_state_record_sensor_groups": [
+    {
+      "record_id": "record-1",
+      "sensor_group_id": "sensor-group-health-1"
+    }
+  ],
+  "knowledge_items": [
+    {
+      "knowledge_item_id": "knowledge-vibration-warning",
+      "title": "Повышенная вибрация компрессора",
+      "body": "Проверить подшипники, крепление и режим нагрузки."
+    }
+  ],
+  "knowledge_item_equipment_types": [
+    {
+      "knowledge_item_id": "knowledge-vibration-warning",
+      "equipment_type": "compressor"
+    }
+  ],
+  "knowledge_item_sensor_types": [
+    {
+      "knowledge_item_id": "knowledge-vibration-warning",
+      "sensor_type": "vibration"
+    }
+  ],
+  "knowledge_item_sensor_group_types": [
+    {
+      "knowledge_item_id": "knowledge-vibration-warning",
+      "sensor_group_type": "health_summary"
+    }
+  ]
+}

@@ -2,7 +2,9 @@
 
 ## Обзор
 
-Backend — единое ядро системы мониторинга: через него проходят клиентские каналы (Telegram, далее Web) и интеграции. Этот tasklist описывает **текущий этап foundation**: выбор стека и соглашений, проектирование **двух базовых API-сценариев** (вопрос ассистенту и фиксация состояния оборудования), каркас сервиса, тесты, реализация endpoint’ов и логики, документация (в т.ч. OpenAPI и окружение), рефакторинг бота на вызовы backend API и базовое качество.
+Backend — единое ядро системы мониторинга: через него проходят клиентские каналы (Telegram, далее Web) и интеграции. Этот tasklist описывает **этап foundation**: выбор стека и соглашений, проектирование **двух базовых API-сценариев** (вопрос ассистенту и фиксация состояния оборудования), каркас сервиса, тесты, реализация endpoint’ов и логики, документация (в т.ч. OpenAPI и окружение), рефакторинг бота на вызовы backend API и базовое качество.
+
+После закрытия foundation backend дополнительно прошёл database stage из `docs/tasks/tasklist-database.md`: локальный PostgreSQL lifecycle, Alembic migrations, import/seed workflow и перевод runtime persistence на `SQLAlchemy AsyncSession + repositories` уже реализованы и проверены.
 
 Глубокое подключение внешних источников мониторинга, полная схема хранения и platform/governance в широком смысле — по [docs/plan.md](../plan.md) в последующих итерациях и в отдельных tasklist’ах (например `tasklist-platform.md`, когда появится).
 
@@ -81,14 +83,23 @@ flowchart LR
 
 - клиент подключён к backend: ✅
 - smoke tests: ✅ `18` backend API tests + `5` bot integration/unit tests; coverage: `N/A`, в репозитории не настроено измерение покрытия
+- PostgreSQL integration tests: ✅ `6` backend persistence/integration tests на реальной мигрированной схеме
 - OpenAPI проверен: ✅
 
 ### Проверка перед фиксацией
 
 - backend поднимается локально при валидном `BACKEND_DATABASE_URL` и доступном PostgreSQL.
 - полезные endpoint'ы подтверждены через `GET /health` и `POST /api/v1/assistant/messages`.
+- persistence flow подтверждён через `POST /api/v1/equipment-state-records`, прямую SQL-проверку и restart backend без потери данных.
 - runtime OpenAPI доступен по `/openapi.json` и содержит `/health`, `/ready`, `/api/v1/assistant/messages`, `/api/v1/equipment-state-records`.
 - `.env` не попадает в git: файл игнорируется и не является tracked-артефактом репозитория.
+
+## Актуальный runtime status
+
+- Backend runtime использует PostgreSQL как основной persistence layer для `equipment`, `system_actors` и `equipment_state_records`.
+- Schema lifecycle переведён на Alembic; runtime `ensure_schema()` больше не является supported workflow.
+- Ready-check использует реальную DB connectivity, а backend quality baseline теперь включает integration прогон на PostgreSQL.
+- Единственное in-memory хранилище, оставшееся в backend, это TTL store для assistant conversations; оно не относится к persistence scope текущего database stage.
 
 ---
 

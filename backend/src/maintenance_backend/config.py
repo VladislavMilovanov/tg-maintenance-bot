@@ -1,14 +1,24 @@
 """Backend configuration loaded from environment variables."""
 
+from pathlib import Path
+
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def load_local_env() -> None:
+    """Load local env files for both root-level and backend-only workflows."""
+
+    for env_path in (Path(".env"), Path("backend/.env")):
+        load_dotenv(env_path, override=False)
 
 
 class Settings(BaseSettings):
     """Runtime settings for backend service."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "backend/.env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -45,8 +55,4 @@ class Settings(BaseSettings):
         default=1800,
         alias="BACKEND_CONVERSATION_TTL_SECONDS",
         ge=1,
-    )
-    seed_equipment_ids: list[str] = Field(
-        default_factory=lambda: ["eq-1", "eq-42"],
-        alias="BACKEND_SEED_EQUIPMENT_IDS",
     )

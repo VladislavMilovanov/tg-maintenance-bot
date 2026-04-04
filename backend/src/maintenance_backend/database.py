@@ -1,104 +1,94 @@
-"""Database lifecycle and schema helpers for PostgreSQL."""
+"""Runtime SQLAlchemy database lifecycle helpers."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any
+from contextlib import asynccontextmanager
+from typing import AsyncIterator, Protocol
 
-
-SCHEMA_STATEMENTS: tuple[str, ...] = (
-    """
-    CREATE TABLE IF NOT EXISTS equipment (
-        equipment_id TEXT PRIMARY KEY,
-        name TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-    """,
-    """
-    CREATE TABLE IF NOT EXISTS equipment_state_records (
-        record_id TEXT PRIMARY KEY,
-        equipment_id TEXT NOT NULL REFERENCES equipment (equipment_id),
-        status TEXT NOT NULL,
-        comment TEXT,
-        observed_at TIMESTAMPTZ NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL,
-        channel TEXT NOT NULL,
-        author_external_id TEXT NOT NULL,
-        author_display_name TEXT,
-        author_role TEXT,
-        idempotency_key TEXT UNIQUE,
-        payload_hash TEXT
-    )
-    """,
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
 )
+
+from maintenance_backend.db_urls import to_sqlalchemy_async_url
+
+
+class DatabaseGateway(Protocol):
+    """Minimal database contract required by the backend runtime."""
+
+    async def connect(self) -> None: ...
+
+    async def close(self) -> None: ...
+
+    async def ping(self) -> None: ...
 
 
 class PostgresDatabase:
-    """Thin asyncpg-backed database wrapper."""
+    """Async SQLAlchemy database wrapper for backend runtime."""
 
     def __init__(self, database_url: str) -> None:
         self._database_url = database_url
-        self._pool: Any = None
+        self._engine: AsyncEngine | None = None
+        self._session_factory: async_sessionmaker[AsyncSession] | None = None
 
     @property
-    def pool(self) -> Any:
-        """Return the underlying asyncpg pool after connection."""
+    def engine(self) -> AsyncEngine:
+        """Return the configured async engine."""
 
-        if self._pool is None:
-            msg = "Database pool is not initialized."
+        if self._engine is None:
+            msg = "Database engine is not initialized."
             raise RuntimeError(msg)
-        return self._pool
+        return self._engine
+
+    @property
+    def session_factory(self) -> async_sessionmaker[AsyncSession]:
+        """Return the configured async session factory."""
+
+        if self._session_factory is None:
+            msg = "Database session factory is not initialized."
+            raise RuntimeError(msg)
+        return self._session_factory
 
     async def connect(self) -> None:
-        """Create asyncpg pool lazily."""
+        """Create async engine and session factory lazily."""
 
-        if self._pool is not None:
+        if self._engine is not None:
             return
 
-        import asyncpg
-
-        self._pool = await asyncpg.create_pool(
-            dsn=self._database_url, min_size=1, max_size=5
+        self._engine = create_async_engine(
+            to_sqlalchemy_async_url(self._database_url),
+            pool_pre_ping=True,
+        )
+        self._session_factory = async_sessionmaker(
+            self._engine,
+            expire_on_commit=False,
         )
 
     async def close(self) -> None:
-        """Close pool if opened."""
+        """Dispose engine if opened."""
 
-        if self._pool is None:
+        if self._engine is None:
             return
-        await self._pool.close()
-        self._pool = None
+        await self._engine.dispose()
+        self._engine = None
+        self._session_factory = None
 
-    async def ensure_schema(self) -> None:
-        """Create minimal MVP schema required by task 05."""
+    @asynccontextmanager
+    async def session(self) -> AsyncIterator[AsyncSession]:
+        """Yield an async SQLAlchemy session."""
 
-        async with self.pool.acquire() as connection:
-            for statement in SCHEMA_STATEMENTS:
-                await connection.execute(statement)
-
-    async def seed_equipment(self, equipment_ids: Sequence[str]) -> None:
-        """Insert configured reference equipment rows if they do not exist."""
-
-        normalized_ids = [
-            equipment_id.strip()
-            for equipment_id in equipment_ids
-            if equipment_id.strip()
-        ]
-        if not normalized_ids:
-            return
-
-        async with self.pool.acquire() as connection:
-            await connection.executemany(
-                """
-                INSERT INTO equipment (equipment_id, name)
-                VALUES ($1, $2)
-                ON CONFLICT (equipment_id) DO NOTHING
-                """,
-                [(equipment_id, equipment_id) for equipment_id in normalized_ids],
-            )
+        async with self.session_factory() as session:
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
 
     async def ping(self) -> None:
         """Validate database availability."""
 
-        async with self.pool.acquire() as connection:
-            await connection.execute("SELECT 1")
+        async with self.engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))

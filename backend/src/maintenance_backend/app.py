@@ -52,8 +52,6 @@ def create_app(
         )
         database = app.state.database
         await database.connect()
-        await database.ensure_schema()
-        await database.seed_equipment(runtime_settings.seed_equipment_ids)
         try:
             yield
         finally:

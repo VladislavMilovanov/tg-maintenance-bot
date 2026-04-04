@@ -78,12 +78,6 @@ class FakeDatabase:
     async def connect(self) -> None:
         self.connected = True
 
-    async def ensure_schema(self) -> None:
-        return None
-
-    async def seed_equipment(self, _: list[str]) -> None:
-        return None
-
     async def close(self) -> None:
         self.connected = False
 

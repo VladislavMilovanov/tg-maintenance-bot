@@ -2,7 +2,7 @@
 
 from fastapi import Request
 
-from maintenance_backend.database import PostgresDatabase
+from maintenance_backend.database import DatabaseGateway
 from maintenance_backend.services.assistant import AssistantService
 from maintenance_backend.services.equipment_state_records import StateRecordService
 
@@ -19,7 +19,7 @@ def get_state_record_service(request: Request) -> StateRecordService:
     return request.app.state.state_record_service
 
 
-def get_database(request: Request) -> PostgresDatabase:
+def get_database(request: Request) -> DatabaseGateway:
     """Provide application database adapter."""
 
     return request.app.state.database

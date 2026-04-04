@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends
 
-from maintenance_backend.database import PostgresDatabase
+from maintenance_backend.database import DatabaseGateway
 from maintenance_backend.dependencies import get_database
 from maintenance_backend.exceptions import ReadinessError
 
@@ -18,7 +18,7 @@ def healthcheck() -> dict[str, str]:
 
 @router.get("/ready")
 async def readiness_check(
-    database: PostgresDatabase = Depends(get_database),
+    database: DatabaseGateway = Depends(get_database),
 ) -> dict[str, str]:
     """Return readiness status that depends on PostgreSQL availability."""
 

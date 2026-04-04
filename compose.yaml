@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: tg-maintenance-postgres
+    ports:
+      - "55433:5432"
+    environment:
+      POSTGRES_DB: tg_maintenance
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tg_maintenance"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

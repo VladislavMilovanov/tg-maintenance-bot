@@ -18,3 +18,4 @@ ADR (Architecture Decision Record) фиксируют ключевые архи�
 
 1. [ADR-001: Выбор СУБД для системы мониторинга оборудования](./adr-001-database.md) — `Accepted`
 2. [ADR-002: Backend stack и границы backend-first ядра](./adr-002-backend-stack.md) — `Accepted`
+3. [ADR-003: Миграции и слой доступа к PostgreSQL](./adr-003-database-migrations-and-access.md) — `Accepted`
