@@ -25,6 +25,26 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "69915bb276b6aec61fe5b283a933f96584f66d14b616ce2060d95757629c6866"
+    },
+    "shadcn": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "e9d01902d32ed6522fa04672e7ca6145de5b27b6fd1879decf9bdda43a472af5"
+    },
+    "vercel-react-best-practices": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "628b7ec88021a38b3d26e9988002f484e1312604fb7bbf7c35676a8a01c77ce4"
+    },
+    "nextjs-app-router-patterns": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "30306e013952d7c6c5f8920e4a2e369350ef9db6d9b4e6a09b5036d0b148e4a4"
+    },
+    "sharp-edges": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "b607ee6ca1ca97415ff86d90e7e728a6c6f8bec1c2e84d6606cb418bf45839a9"
     }
   }
 }

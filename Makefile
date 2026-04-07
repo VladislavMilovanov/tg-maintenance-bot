@@ -1,4 +1,4 @@
-.PHONY: install run run-backend backend-run lint lint-backend backend-lint format test test-backend backend-test test-backend-integration backend-test-integration db-up db-down db-reset db-migrate db-downgrade db-import db-check db-psql
+.PHONY: install run run-backend backend-run lint lint-backend backend-lint format test test-backend backend-test test-backend-integration backend-test-integration db-up db-down db-reset db-migrate db-downgrade db-import db-check db-psql web-install web-dev web-build web-lint
 
 COMPOSE = docker compose
 ALEMBIC = UV_CACHE_DIR=.uv-cache PYTHONPATH=backend/src uv run --no-sync alembic
@@ -64,3 +64,16 @@ db-check:
 
 db-psql:
 	$(COMPOSE) exec postgres psql -U postgres -d tg_maintenance
+
+# ── Frontend ──────────────────────────────────────────────
+web-install:
+	cd frontend && pnpm install
+
+web-dev:
+	cd frontend && pnpm dev
+
+web-build:
+	cd frontend && pnpm build
+
+web-lint:
+	cd frontend && pnpm lint

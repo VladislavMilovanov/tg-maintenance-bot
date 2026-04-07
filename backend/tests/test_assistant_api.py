@@ -147,8 +147,8 @@ async def test_assistant_message_returns_503_when_fallback_cannot_be_built(
 
 
 @pytest.mark.asyncio
-async def test_assistant_message_rejects_unknown_equipment_context(api_client) -> None:
-    """Assistant endpoint should return 422 for invalid equipment context."""
+async def test_assistant_message_ignores_unknown_equipment_context(api_client) -> None:
+    """Assistant endpoint should succeed with null context when equipment_id is unknown."""
 
     response = await api_client.post(
         "/api/v1/assistant/messages",
@@ -160,15 +160,6 @@ async def test_assistant_message_rejects_unknown_equipment_context(api_client) -
         },
     )
 
-    assert response.status_code == 422
-    assert response.json() == {
-        "code": "validation_error",
-        "message": "Request validation failed.",
-        "details": [
-            {
-                "field": "equipment_context.equipment_id",
-                "issue": "Equipment was not found.",
-            }
-        ],
-        "trace_id": None,
-    }
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["context_used"] is None

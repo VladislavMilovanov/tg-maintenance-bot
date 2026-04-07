@@ -34,6 +34,62 @@
 - `409` используется только для конфликта по уже использованному `idempotency_key` с другим payload; без ключа каждый успешный запрос считается новой записью.
 - Созданная запись считается исторической `state record`, а не полным снимком текущего состояния оборудования.
 
+## Сценарий 3: Временная авторизация (Telegram username)
+
+- Endpoint: `POST /api/v1/auth/login`
+- Клиент передаёт `telegram_username`. Backend находит или создаёт `system_actor` и возвращает информацию о пользователе с токеном сессии.
+- Response включает `actor_id`, `external_id`, `display_name`, `role`, `token`.
+- Это временное решение; в будущем вход будет по логину/паролю.
+
+- Endpoint: `GET /api/v1/auth/me`
+- Требует `Authorization: Bearer {token}`.
+- Возвращает текущего пользователя.
+
+## Сценарий 4: Обзор площадки (Plant Dashboard)
+
+- Endpoint: `GET /api/v1/dashboard/plant`
+- Возвращает агрегированное состояние площадки: общий статус по worst-status-wins, сводку по статусам, историю за 14 дней (по дням), топ проблемного оборудования.
+- Опциональный `location_id` для ограничения скоупа.
+
+- Endpoint: `GET /api/v1/dashboard/state-feed`
+- Пагинированная лента изменений состояния оборудования. Параметры: `limit`, `offset`.
+
+- Endpoint: `GET /api/v1/dashboard/action-feed`
+- Пагинированная лента ручных фиксаций (state records). Параметры: `limit`, `offset`.
+
+## Сценарий 5: Список и детали оборудования
+
+- Endpoint: `GET /api/v1/equipment`
+- Пагинированный список оборудования с текущим статусом и локацией. Фильтры: `location_id`, `status`, `limit`, `offset`.
+
+- Endpoint: `GET /api/v1/equipment/{equipment_id}`
+- Детальная карточка оборудования: статус, локация, владелец, прогресс ТО, топ-3 критических узла (sensor groups), количество узлов, время последнего изменения.
+
+- Endpoint: `GET /api/v1/equipment/{equipment_id}/history`
+- Пагинированная история состояний (state records с информацией об авторе). Параметры: `limit`, `offset`.
+
+## Сценарий 6: Детали узла (Sensor Group)
+
+- Endpoint: `GET /api/v1/sensor-groups/{sensor_group_id}`
+- Детальная карточка узла: статус, тип, URL фото, связанное оборудование, список датчиков с последними значениями.
+- AI-диагностика запрашивается через существующий `POST /api/v1/assistant/messages` с `equipment_context.sensor_group_ids`.
+
+## Сценарий 7: Дерево локаций
+
+- Endpoint: `GET /api/v1/locations/tree`
+- Иерархическое дерево локаций с количеством оборудования и агрегированным статусом по каждому узлу дерева.
+
+## Сценарий 8: Админ-панель
+
+- Endpoint: `GET /api/v1/admin/dashboard`
+- KPI: общее количество оборудования, critical, warning, количество клиентов. График активности по дням. Матрица прогресса по локациям.
+
+- Endpoint: `GET /api/v1/admin/clients`
+- Пагинированная таблица клиентов. Параметры: `limit`, `offset`.
+
+- Endpoint: `GET /api/v1/admin/events`
+- Пагинированная лента последних событий. Параметры: `limit`, `offset`.
+
 ## Общие договорённости
 
 - Версия API начинается с `/api/v1`.
@@ -41,8 +97,30 @@
 - В assistant flow вызов LLM выполняется только backend-ом.
 - `400` зарезервирован под malformed HTTP/body ошибки, а `422` под ошибки контрактной и бизнес-валидации после успешного парсинга запроса.
 - Детали хранения истории диалога, идемпотентности фиксации, review-полей и отдельного слоя current state/data source отложены до задач реализации data layer.
+- Агрегация статусов выполняется по принципу worst-status-wins снизу вверх: узел → оборудование → площадка.
 
 ## Operational endpoints
 
 - `GET /health` используется как liveness-check и не зависит от БД.
 - `GET /ready` используется как readiness-check и возвращает success только при доступном PostgreSQL.
+
+## Сценарий 9: Аналитический запрос на естественном языке (Text-to-SQL)
+
+- Endpoint: `POST /api/v1/query/text-to-sql`
+- Требует `Authorization: Bearer {token}`.
+- Request body: `{"question": "Сколько единиц оборудования в статусе critical?"}`.
+- Response:
+  ```json
+  {
+    "answer": "В базе данных 5 единиц оборудования в статусе critical.",
+    "sql_query": "SELECT COUNT(*) AS count FROM equipment WHERE current_status = 'critical'",
+    "row_count": 1,
+    "columns": ["count"],
+    "rows": [[5]],
+    "error": null
+  }
+  ```
+- Если LLM не смог сгенерировать корректный SQL или запрос не прошёл валидацию безопасности, возвращается `200` с заполненным полем `error` и нулевым `row_count`.
+- Только SELECT-запросы разрешены; любые мутирующие операторы (INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, GRANT, REVOKE) отклоняются на уровне сервиса.
+- Таймаут выполнения запроса: 5 секунд. Максимальное количество строк: 100.
+- SQL генерируется исключительно backend-ом на основе системной подсказки со схемой БД; клиент передаёт только текстовый вопрос.

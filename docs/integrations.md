@@ -40,3 +40,57 @@ flowchart LR
 - Риск БД: без доступного PostgreSQL backend не готов к записи состояния и должен сигнализировать это через readiness.
 - Риск Telegram-канала: ограничения API и сетевые сбои; нужен повтор доставки и базовый мониторинг ошибок.
 - Для web-клиента ключевой риск — рассинхрон контрактов frontend/backend; важна единая версия API.
+
+## Голосовой ввод (Voice Chat)
+
+Оба канала поддерживают ввод голосом. Транскрибированный текст передаётся в тот же endpoint `POST /api/v1/assistant/messages`.
+
+| Канал | Технология | Модель | Детали |
+|---|---|---|---|
+| Web-клиент | Web Speech API (браузерная, нативная) | встроенная в браузер | `window.SpeechRecognition` / `window.webkitSpeechRecognition`, язык `ru-RU`, клиент-сайд, не требует API-ключа |
+| Telegram bot | OpenAI Whisper API | `whisper-1` | Голосовое сообщение (`.ogg`) скачивается из Telegram, отправляется в Whisper через `OPENAI_API_KEY` / `OPENAI_BASE_URL`, транскрипт отправляется в backend |
+
+### Конфигурация голоса для Telegram-бота
+
+Добавить в `.env`:
+```
+OPENAI_API_KEY=<your-key>          # ключ OpenAI или OpenRouter
+OPENAI_BASE_URL=https://openrouter.ai/api/v1   # по умолчанию; для прямого OpenAI убрать
+WHISPER_MODEL=whisper-1            # по умолчанию
+```
+
+Если `OPENAI_API_KEY` не задан, бот отвечает пользователю сообщением о недоступности голосового ввода и не падает.
+
+## Text-to-SQL (Аналитические запросы на естественном языке)
+
+```mermaid
+flowchart LR
+    U[Пользователь] -->|natural language question| BE[Backend]
+    BE -->|generate SQL prompt + schema| LLM[OpenRouter / LLM]
+    LLM -->|SELECT statement| BE
+    BE -->|validate + execute SELECT| PG[(PostgreSQL)]
+    PG -->|result rows| BE
+    BE -->|summarize results| LLM
+    LLM -->|natural language answer| BE
+    BE -->|answer + sql + rows| U
+```
+
+### Endpoint
+
+`POST /api/v1/query/text-to-sql` — требует `Authorization: Bearer {token}`.
+
+### Поток
+
+1. Клиент отправляет вопрос на естественном языке.
+2. Backend передаёт вопрос + схему БД в LLM → получает SQL SELECT.
+3. SQL проходит валидацию безопасности (только SELECT, blocklist мутаций).
+4. SELECT выполняется против БД с таймаутом 5 сек и лимитом 100 строк.
+5. Результаты передаются в LLM для формирования краткого ответа.
+6. Клиент получает: текстовый ответ, использованный SQL, табличные данные.
+
+### Гарантии безопасности
+
+- Только SELECT-запросы; INSERT/UPDATE/DELETE/DROP/ALTER/TRUNCATE/CREATE/GRANT/REVOKE отклоняются.
+- Таймаут запроса: 5 секунд.
+- Максимум 100 строк в результате.
+- Генерация SQL выполняется только backend-ом; клиент не передаёт SQL напрямую.

@@ -17,6 +17,18 @@ tags:
     description: Manual equipment state capture flow
   - name: service
     description: Operational service endpoints
+  - name: auth
+    description: Temporary authentication
+  - name: dashboard
+    description: Plant overview and feeds
+  - name: equipment-read
+    description: Equipment listing and details
+  - name: sensor-groups
+    description: Sensor group details
+  - name: locations
+    description: Location hierarchy
+  - name: admin
+    description: Admin panel endpoints
 paths:
   /health:
     get:
@@ -148,7 +160,335 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/auth/login:
+    post:
+      tags:
+        - auth
+      operationId: loginByTelegramUsername
+      summary: Login by Telegram username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/auth/me:
+    get:
+      tags:
+        - auth
+      operationId: getCurrentUser
+      summary: Get current authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthMeResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dashboard/plant:
+    get:
+      tags:
+        - dashboard
+      operationId: getPlantOverview
+      summary: Get aggregated plant overview
+      parameters:
+        - name: location_id
+          in: query
+          required: false
+          schema:
+            type:
+              - string
+              - 'null'
+      responses:
+        '200':
+          description: Plant overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlantOverviewResponse'
+  /api/v1/dashboard/state-feed:
+    get:
+      tags:
+        - dashboard
+      operationId: getStateFeed
+      summary: Paginated feed of equipment state changes
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: State change feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StateFeedResponse'
+  /api/v1/dashboard/action-feed:
+    get:
+      tags:
+        - dashboard
+      operationId: getActionFeed
+      summary: Paginated feed of manual state records
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Action feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionFeedResponse'
+  /api/v1/equipment:
+    get:
+      tags:
+        - equipment-read
+      operationId: listEquipment
+      summary: Paginated list of equipment
+      parameters:
+        - name: location_id
+          in: query
+          required: false
+          schema:
+            type:
+              - string
+              - 'null'
+        - name: status
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/EquipmentStatus'
+              - type: 'null'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Equipment list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentListResponse'
+  /api/v1/equipment/{equipment_id}:
+    get:
+      tags:
+        - equipment-read
+      operationId: getEquipmentDetail
+      summary: Get equipment detail card
+      parameters:
+        - name: equipment_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Equipment detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentDetailResponse'
+        '404':
+          description: Equipment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/equipment/{equipment_id}/history:
+    get:
+      tags:
+        - equipment-read
+      operationId: getEquipmentHistory
+      summary: Paginated state history for equipment
+      parameters:
+        - name: equipment_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Equipment state history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentHistoryResponse'
+        '404':
+          description: Equipment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/sensor-groups/{sensor_group_id}:
+    get:
+      tags:
+        - sensor-groups
+      operationId: getSensorGroupDetail
+      summary: Get sensor group detail card
+      parameters:
+        - name: sensor_group_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sensor group detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorGroupDetailResponse'
+        '404':
+          description: Sensor group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/locations/tree:
+    get:
+      tags:
+        - locations
+      operationId: getLocationTree
+      summary: Get hierarchical location tree
+      responses:
+        '200':
+          description: Location tree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationTreeResponse'
+  /api/v1/admin/dashboard:
+    get:
+      tags:
+        - admin
+      operationId: getAdminDashboard
+      summary: Get admin dashboard KPIs and charts
+      responses:
+        '200':
+          description: Admin dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDashboardResponse'
+  /api/v1/admin/clients:
+    get:
+      tags:
+        - admin
+      operationId: listAdminClients
+      summary: Paginated list of clients
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Client list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminClientsResponse'
+  /api/v1/admin/events:
+    get:
+      tags:
+        - admin
+      operationId: listAdminEvents
+      summary: Paginated feed of recent events
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Event feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEventsResponse'
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     Channel:
       type: string
@@ -444,3 +784,686 @@ components:
         issue:
           type: string
           minLength: 1
+    AuthLoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - telegram_username
+      properties:
+        telegram_username:
+          type: string
+          minLength: 1
+    AuthLoginResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - actor_id
+        - external_id
+        - display_name
+        - role
+        - token
+      properties:
+        actor_id:
+          type: string
+          minLength: 1
+        external_id:
+          type: string
+          minLength: 1
+        display_name:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+        role:
+          anyOf:
+            - $ref: '#/components/schemas/UserRole'
+            - type: 'null'
+        token:
+          type: string
+          minLength: 1
+    AuthMeResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - actor_id
+        - external_id
+        - display_name
+        - role
+      properties:
+        actor_id:
+          type: string
+          minLength: 1
+        external_id:
+          type: string
+          minLength: 1
+        display_name:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+        role:
+          anyOf:
+            - $ref: '#/components/schemas/UserRole'
+            - type: 'null'
+    StatusSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - normal
+        - warning
+        - critical
+        - unknown
+      properties:
+        normal:
+          type: integer
+        warning:
+          type: integer
+        critical:
+          type: integer
+        unknown:
+          type: integer
+    DailyStatusEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - date
+        - normal
+        - warning
+        - critical
+        - unknown
+      properties:
+        date:
+          type: string
+          format: date
+        normal:
+          type: integer
+        warning:
+          type: integer
+        critical:
+          type: integer
+        unknown:
+          type: integer
+    WorstPerformerEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - equipment_id
+        - name
+        - current_status
+        - location_name
+        - last_changed_at
+      properties:
+        equipment_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        current_status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        location_name:
+          type: string
+          minLength: 1
+        last_changed_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+    PlantOverviewResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - plant_status
+        - status_summary
+        - daily_history
+        - worst_performers
+      properties:
+        plant_status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        status_summary:
+          $ref: '#/components/schemas/StatusSummary'
+        daily_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyStatusEntry'
+        worst_performers:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorstPerformerEntry'
+    StateChangeEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - equipment_id
+        - equipment_name
+        - old_status
+        - new_status
+        - changed_at
+      properties:
+        equipment_id:
+          type: string
+          minLength: 1
+        equipment_name:
+          type: string
+          minLength: 1
+        old_status:
+          anyOf:
+            - $ref: '#/components/schemas/EquipmentStatus'
+            - type: 'null'
+        new_status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        changed_at:
+          type: string
+          format: date-time
+    StateFeedResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StateChangeEntry'
+        total:
+          type: integer
+    ActionFeedEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - record_id
+        - equipment_id
+        - equipment_name
+        - status
+        - comment
+        - author_name
+        - observed_at
+        - channel
+      properties:
+        record_id:
+          type: string
+          minLength: 1
+        equipment_id:
+          type: string
+          minLength: 1
+        equipment_name:
+          type: string
+          minLength: 1
+        status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        comment:
+          type:
+            - string
+            - 'null'
+        author_name:
+          type:
+            - string
+            - 'null'
+        observed_at:
+          type: string
+          format: date-time
+        channel:
+          $ref: '#/components/schemas/Channel'
+    ActionFeedResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionFeedEntry'
+        total:
+          type: integer
+    LocationBrief:
+      type: object
+      additionalProperties: false
+      required:
+        - location_id
+        - name
+      properties:
+        location_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+    ActorBrief:
+      type: object
+      additionalProperties: false
+      required:
+        - actor_id
+        - display_name
+      properties:
+        actor_id:
+          type: string
+          minLength: 1
+        display_name:
+          type:
+            - string
+            - 'null'
+    EquipmentBrief:
+      type: object
+      additionalProperties: false
+      required:
+        - equipment_id
+        - name
+      properties:
+        equipment_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+    SensorGroupBrief:
+      type: object
+      additionalProperties: false
+      required:
+        - sensor_group_id
+        - name
+        - status
+        - group_type
+      properties:
+        sensor_group_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        group_type:
+          type: string
+          minLength: 1
+    SensorEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - sensor_id
+        - name
+        - sensor_type
+        - last_observed_at
+      properties:
+        sensor_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        sensor_type:
+          type: string
+          minLength: 1
+        last_observed_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+    EquipmentListItem:
+      type: object
+      additionalProperties: false
+      required:
+        - equipment_id
+        - name
+        - equipment_code
+        - current_status
+        - location
+        - owner
+      properties:
+        equipment_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        equipment_code:
+          type:
+            - string
+            - 'null'
+        current_status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        location:
+          $ref: '#/components/schemas/LocationBrief'
+        owner:
+          anyOf:
+            - $ref: '#/components/schemas/ActorBrief'
+            - type: 'null'
+    EquipmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EquipmentListItem'
+        total:
+          type: integer
+    EquipmentDetailResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - equipment_id
+        - name
+        - equipment_code
+        - current_status
+        - location
+        - owner
+        - maintenance_progress
+        - top_nodes
+        - sensor_groups_count
+        - last_state_change
+      properties:
+        equipment_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        equipment_code:
+          type:
+            - string
+            - 'null'
+        current_status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        location:
+          $ref: '#/components/schemas/LocationBrief'
+        owner:
+          anyOf:
+            - $ref: '#/components/schemas/ActorBrief'
+            - type: 'null'
+        maintenance_progress:
+          type:
+            - number
+            - 'null'
+          minimum: 0
+          maximum: 1
+        top_nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SensorGroupBrief'
+        sensor_groups_count:
+          type: integer
+        last_state_change:
+          type:
+            - string
+            - 'null'
+          format: date-time
+    EquipmentHistoryEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - record_id
+        - status
+        - comment
+        - observed_at
+        - created_at
+        - channel
+        - author
+      properties:
+        record_id:
+          type: string
+          minLength: 1
+        status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        comment:
+          type:
+            - string
+            - 'null'
+        observed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        channel:
+          $ref: '#/components/schemas/Channel'
+        author:
+          $ref: '#/components/schemas/StateRecordAuthor'
+    EquipmentHistoryResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EquipmentHistoryEntry'
+        total:
+          type: integer
+    SensorGroupDetailResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - sensor_group_id
+        - name
+        - status
+        - group_type
+        - image_url
+        - equipment
+        - sensors
+      properties:
+        sensor_group_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        group_type:
+          type: string
+          minLength: 1
+        image_url:
+          type:
+            - string
+            - 'null'
+        equipment:
+          $ref: '#/components/schemas/EquipmentBrief'
+        sensors:
+          type: array
+          items:
+            $ref: '#/components/schemas/SensorEntry'
+    LocationTreeNode:
+      type: object
+      additionalProperties: false
+      required:
+        - location_id
+        - name
+        - location_type
+        - status
+        - equipment_count
+        - children
+      properties:
+        location_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        location_type:
+          type: string
+          minLength: 1
+        status:
+          $ref: '#/components/schemas/EquipmentStatus'
+        equipment_count:
+          type: integer
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationTreeNode'
+    LocationTreeResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - locations
+      properties:
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationTreeNode'
+    AdminKpis:
+      type: object
+      additionalProperties: false
+      required:
+        - total_equipment
+        - critical_count
+        - warning_count
+        - clients_count
+      properties:
+        total_equipment:
+          type: integer
+        critical_count:
+          type: integer
+        warning_count:
+          type: integer
+        clients_count:
+          type: integer
+    ActivityChartEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - date
+        - actions_count
+      properties:
+        date:
+          type: string
+          format: date
+        actions_count:
+          type: integer
+    ProgressMatrixEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - location_name
+        - total
+        - normal
+        - warning
+        - critical
+      properties:
+        location_name:
+          type: string
+          minLength: 1
+        total:
+          type: integer
+        normal:
+          type: integer
+        warning:
+          type: integer
+        critical:
+          type: integer
+    AdminDashboardResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - kpis
+        - activity_chart
+        - progress_matrix
+      properties:
+        kpis:
+          $ref: '#/components/schemas/AdminKpis'
+        activity_chart:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityChartEntry'
+        progress_matrix:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgressMatrixEntry'
+    AdminClientEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - actor_id
+        - external_id
+        - display_name
+        - role
+        - equipment_count
+        - last_activity_at
+      properties:
+        actor_id:
+          type: string
+          minLength: 1
+        external_id:
+          type: string
+          minLength: 1
+        display_name:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+        role:
+          anyOf:
+            - $ref: '#/components/schemas/UserRole'
+            - type: 'null'
+        equipment_count:
+          type: integer
+        last_activity_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+    AdminClientsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminClientEntry'
+        total:
+          type: integer
+    AdminEventEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - event_type
+        - equipment_id
+        - equipment_name
+        - actor_name
+        - description
+        - occurred_at
+      properties:
+        event_type:
+          type: string
+          minLength: 1
+        equipment_id:
+          type:
+            - string
+            - 'null'
+        equipment_name:
+          type:
+            - string
+            - 'null'
+        actor_name:
+          type:
+            - string
+            - 'null'
+        description:
+          type: string
+          minLength: 1
+        occurred_at:
+          type: string
+          format: date-time
+    AdminEventsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminEventEntry'
+        total:
+          type: integer

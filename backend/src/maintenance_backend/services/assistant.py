@@ -5,7 +5,6 @@ from typing import Protocol
 
 from maintenance_backend.conversations import ConversationStore
 from maintenance_backend.exceptions import (
-    AssistantContextValidationError,
     AssistantUnavailable,
 )
 from maintenance_backend.gateways import AssistantGateway, AssistantGatewayError
@@ -16,7 +15,6 @@ from maintenance_backend.schemas.assistant import (
     AssistantResponseMeta,
     ContextUsed,
 )
-from maintenance_backend.schemas.errors import ErrorDetail
 
 FALLBACK_ANSWER = "Не удалось получить штатную интерпретацию. Попробуйте позже."
 
@@ -78,14 +76,11 @@ class DefaultAssistantService:
         if equipment_id is not None and not await self.equipment_repository.exists(
             equipment_id
         ):
-            raise AssistantContextValidationError(
-                details=[
-                    ErrorDetail(
-                        field="equipment_context.equipment_id",
-                        issue="Equipment was not found.",
-                    )
-                ]
-            )
+            # Equipment not found: treat context as absent rather than rejecting
+            # the request. This allows the assistant to still answer even when
+            # the client supplies a stale or invalid equipment ID (e.g. navigating
+            # directly to a URL whose equipment was removed from the database).
+            return None
 
         return ContextUsed(
             equipment_id=equipment_id,

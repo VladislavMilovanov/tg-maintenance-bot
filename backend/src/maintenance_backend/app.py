@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from maintenance_backend.api.health import router as health_router
@@ -20,10 +21,16 @@ from maintenance_backend.repositories import (
     PostgresEquipmentRepository,
     PostgresStateRecordRepository,
 )
+from maintenance_backend.repositories_read import PostgresReadRepository
 from maintenance_backend.schemas.errors import ErrorDetail, ErrorResponse
 from maintenance_backend.services.assistant import DefaultAssistantService
+from maintenance_backend.services.auth import AuthService
 from maintenance_backend.services.equipment_state_records import (
     DefaultStateRecordService,
+)
+from maintenance_backend.services.text_to_sql import (
+    OpenRouterTextToSqlGateway,
+    TextToSqlService,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,6 +59,10 @@ def create_app(
         )
         database = app.state.database
         await database.connect()
+        # Wire session_factory into text_to_sql_service after DB is ready
+        text_to_sql_svc = getattr(app.state, "text_to_sql_service", None)
+        if text_to_sql_svc is not None and hasattr(database, "session_factory"):
+            text_to_sql_svc._session_factory = database.session_factory
         try:
             yield
         finally:
@@ -69,6 +80,14 @@ def create_app(
     app.state.settings = runtime_settings
     for key, value in runtime_components.items():
         setattr(app.state, key, value)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000", "http://localhost:3001"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.middleware("http")
     async def log_request_metrics(request: Request, call_next):
@@ -153,6 +172,22 @@ def _build_components(settings: Settings, overrides: dict[str, Any]) -> dict[str
     ) or DefaultStateRecordService(
         state_record_repository=state_record_repository,
     )
+    auth_service = overrides.get("auth_service") or AuthService(database=database)
+    read_repository = overrides.get("read_repository") or PostgresReadRepository(
+        database=database
+    )
+    text_to_sql_gateway = overrides.get(
+        "text_to_sql_gateway"
+    ) or OpenRouterTextToSqlGateway(
+        api_key=settings.openrouter_api_key,
+        base_url=settings.openrouter_base_url,
+        model=settings.openrouter_model,
+        timeout_seconds=settings.openrouter_timeout_seconds,
+    )
+    text_to_sql_service = overrides.get("text_to_sql_service") or TextToSqlService(
+        gateway=text_to_sql_gateway,
+        session_factory=None,  # injected after database.connect() in lifespan
+    )
     return {
         "database": database,
         "equipment_repository": equipment_repository,
@@ -161,6 +196,10 @@ def _build_components(settings: Settings, overrides: dict[str, Any]) -> dict[str
         "assistant_gateway": assistant_gateway,
         "assistant_service": assistant_service,
         "state_record_service": state_record_service,
+        "auth_service": auth_service,
+        "read_repository": read_repository,
+        "text_to_sql_gateway": text_to_sql_gateway,
+        "text_to_sql_service": text_to_sql_service,
     }
 
 

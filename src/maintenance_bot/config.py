@@ -21,3 +21,6 @@ class Settings(BaseSettings):
     BACKEND_TIMEOUT_SECONDS: float = Field(default=20, gt=0)
     LOG_LEVEL: str = "INFO"
     EQUIPMENT_DATA_PATH: str | None = None
+    OPENAI_API_KEY: str | None = None
+    OPENAI_BASE_URL: str = "https://openrouter.ai/api/v1"
+    WHISPER_MODEL: str = "whisper-1"

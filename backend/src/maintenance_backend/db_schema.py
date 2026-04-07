@@ -105,6 +105,8 @@ equipment = sa.Table(
         nullable=False,
         server_default=sa.text("'unknown'::equipment_status"),
     ),
+    sa.Column("maintenance_due_at", sa.DateTime(timezone=True), nullable=True),
+    sa.Column("maintenance_completed_at", sa.DateTime(timezone=True), nullable=True),
     sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
     sa.Column(
         "created_at",
@@ -213,6 +215,7 @@ sensor_groups = sa.Table(
         nullable=False,
         server_default=sa.false(),
     ),
+    sa.Column("image_url", sa.Text(), nullable=True),
     sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
     sa.Column(
         "created_at",
