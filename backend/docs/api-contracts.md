@@ -38,11 +38,11 @@
 
 - Endpoint: `POST /api/v1/auth/login`
 - Клиент передаёт `telegram_username`. Backend находит или создаёт `system_actor` и возвращает информацию о пользователе с токеном сессии.
-- Response включает `actor_id`, `external_id`, `display_name`, `role`, `token`.
+- Response включает `actor_id`, `display_name`, `role`, `access_token`, `token_type`.
 - Это временное решение; в будущем вход будет по логину/паролю.
 
 - Endpoint: `GET /api/v1/auth/me`
-- Требует `Authorization: Bearer {token}`.
+- Требует `Authorization: Bearer {access_token}`.
 - Возвращает текущего пользователя.
 
 ## Сценарий 4: Обзор площадки (Plant Dashboard)
@@ -93,7 +93,7 @@
 ## Общие договорённости
 
 - Версия API начинается с `/api/v1`.
-- И Telegram-бот, и будущий web-клиент используют одинаковые DTO и один error-shape.
+- И Telegram-бот, и frontend используют одинаковые DTO и один error-shape там, где сценарий не зависит от временной frontend auth.
 - В assistant flow вызов LLM выполняется только backend-ом.
 - `400` зарезервирован под malformed HTTP/body ошибки, а `422` под ошибки контрактной и бизнес-валидации после успешного парсинга запроса.
 - Детали хранения истории диалога, идемпотентности фиксации, review-полей и отдельного слоя current state/data source отложены до задач реализации data layer.
@@ -107,7 +107,7 @@
 ## Сценарий 9: Аналитический запрос на естественном языке (Text-to-SQL)
 
 - Endpoint: `POST /api/v1/query/text-to-sql`
-- Требует `Authorization: Bearer {token}`.
+- Требует `Authorization: Bearer {access_token}`.
 - Request body: `{"question": "Сколько единиц оборудования в статусе critical?"}`.
 - Response:
   ```json

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docs Updater"
+  short_description: "Sync API and onboarding docs after code changes"
+  default_prompt: "Use $docs-updater to inspect code changes, decide whether documentation drift exists, and update docs/tech/api-contracts.md plus any affected onboarding sections."

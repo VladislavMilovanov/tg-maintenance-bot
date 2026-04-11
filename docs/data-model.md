@@ -1,7 +1,7 @@
 # Модель данных системы мониторинга оборудования
 
-Документ фиксирует logical + physical schema spec для core domain задачи 02.  
-Уровень описания: проектный, без миграций и ORM-реализации, но с достаточной детализацией для проектирования PostgreSQL-схемы.
+Документ фиксирует project-level logical + physical schema spec для core domain.  
+Уровень описания: проектный, без полного описания миграций и ORM-реализации, но с достаточной детализацией для проектирования и обсуждения PostgreSQL-схемы.
 
 Источником пользовательских потоков для этой модели является `docs/spec/user-scenarios.md`.
 
@@ -18,11 +18,19 @@
 Документ не меняет текущие HTTP DTO и не заменяет OpenAPI.  
 Он фиксирует, какие таблицы, связи и ограничения должны появиться в data layer.
 
+## Статус документа
+
+- Это не runtime source of truth и не точное описание уже реализованной схемы один-в-один.
+- Документ частично отражает текущую реализацию, а частично описывает целевую модель, к которой проект движется.
+- Для фактических API-контрактов используйте `backend/docs/openapi.yaml`.
+- Для operational onboarding используйте `README.md` и `docs/onboarding.md`.
+- Для эволюции реализации учитывайте `docs/plan.md`, iteration/task `plan.md` и `summary.md`.
+
 ---
 
-## Границы текущего этапа
+## Границы документа
 
-В scope Task 02 входит только core domain:
+Документ описывает прежде всего core domain:
 - actors;
 - locations;
 - equipment;
@@ -32,7 +40,7 @@
 - state records;
 - knowledge items.
 
-Вне scope Task 02:
+Части, которые могут быть реализованы не полностью или оставаться целевой моделью:
 - assistant conversation persistence;
 - auth/session storage;
 - incident/case workflow;

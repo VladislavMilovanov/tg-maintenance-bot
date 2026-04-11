@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend
 
-## Getting Started
+Next.js web-клиент для ролей инженера и администратора. Frontend использует backend API и не дублирует бизнес-логику.
 
-First, run the development server:
+## Что находится в папке
+
+- приложение: `frontend/src/app`
+- UI-компоненты: `frontend/src/components`
+- API client: `frontend/src/lib/api`
+- auth context: `frontend/src/lib/auth`
+
+## Зависимости
+
+- Node.js `>=20`
+- `pnpm`
+
+## Установка
+
+Из корня репозитория:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+make web-install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Или напрямую:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd frontend
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Окружение
 
-## Learn More
+Frontend читает:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Для локальной разработки можно использовать `frontend/.env.local`. Если переменная не задана, клиент всё равно по умолчанию смотрит в `http://localhost:8000`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Запуск
 
-## Deploy on Vercel
+Из корня репозитория:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+make web-dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Или напрямую:
+
+```bash
+cd frontend
+pnpm dev
+```
+
+Приложение будет доступно на `http://localhost:3000`.
+
+## Что проверить вручную
+
+После старта backend и frontend:
+
+1. Открыть `http://localhost:3000`
+2. Войти по Telegram username
+3. Проверить страницы:
+   - `/dashboard`
+   - `/chat`
+   - `/admin`
+
+Если backend запущен на другом адресе, обновите `NEXT_PUBLIC_API_URL`.
+
+## Проверки качества
+
+```bash
+make web-lint
+make web-build
+```
+
+Линт использует `eslint`, а `web-build` проверяет, что приложение собирается.
+
+## Тесты
+
+Отдельный frontend test suite в текущем репозитории не настроен. Для web-слоя сейчас доступны только ручной smoke-check, `web-lint` и `web-build`.

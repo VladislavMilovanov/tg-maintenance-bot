@@ -1,28 +1,106 @@
-# Backend Local DB Notes
+# Backend
 
-Backend runtime больше не должен поднимать схему PostgreSQL через startup bootstrap. Поддерживаемый локальный путь:
+FastAPI backend является единым ядром системы. Он обслуживает Telegram-бота и web-клиент, работает с PostgreSQL и выполняет LLM-интеграцию.
 
-1. Из корня репозитория выполнить `make db-up`.
-2. Применить миграции: `make db-migrate`.
-3. Загрузить sample data: `make db-import`.
-4. Проверить состояние БД: `make db-check`.
-5. Запустить backend: `make run-backend`.
+## Что относится к backend
 
-Ключевая backend-переменная:
+- код: `backend/src/maintenance_backend`
+- API-контракты: `backend/docs/openapi.yaml`, `backend/docs/api-contracts.md`
+- тесты: `backend/tests`, `backend/tests_integration`
+- runtime-конфиг: переменные окружения `BACKEND_*`
 
-- `BACKEND_DATABASE_URL=postgresql://postgres:postgres@localhost:55433/tg_maintenance`
+## Зависимости
 
-Локальный Postgres для проекта публикуется через `compose.yaml` на `localhost:55433`, чтобы не конфликтовать с другими контейнерами на стандартных портах.
+- Python `3.12+`
+- `uv`
+- Docker и Docker Compose
 
-Полезные команды:
+## Настройка
 
-- `make db-up` / `make db-down`
+1. Из корня репозитория установить Python-зависимости:
+
+```bash
+make install
+```
+
+2. Создать `.env` из корневого шаблона:
+
+```bash
+cp .env.example .env
+```
+
+3. Заполнить минимум:
+- `BACKEND_DATABASE_URL`
+- `BACKEND_OPENROUTER_API_KEY` только если нужен штатный LLM flow без fallback
+
+`backend/.env.example` дублирует backend-only переменные как справочный файл, но основная точка входа для локального запуска остаётся корневой `.env.example`.
+
+## Локальный DB workflow
+
+```bash
+make db-up
+make db-migrate
+make db-import
+make db-check
+```
+
+По умолчанию PostgreSQL доступен по `postgresql://postgres:postgres@localhost:55433/tg_maintenance`.
+
+Поддерживаемые DB-команды:
+- `make db-up`
+- `make db-down`
 - `make db-reset`
 - `make db-migrate`
 - `make db-downgrade`
 - `make db-import`
 - `make db-check`
 - `make db-psql`
-- `make test-backend-integration`
 
-Integration-набор использует реальную PostgreSQL-схему с Alembic migrations и SQLAlchemy runtime layer. Перед запуском backend и integration tests БД должна быть уже мигрирована, а для ручных сценариев обычно ещё и заполнена через `make db-import`.
+## Запуск backend
+
+```bash
+make run-backend
+```
+
+Сервис стартует на `http://127.0.0.1:8000`.
+
+## Smoke-check
+
+После запуска проверьте:
+- `GET /health`
+- `GET /ready`
+- `GET /docs`
+- `GET /openapi.json`
+
+`/health` используется как liveness-check и не зависит от БД.  
+`/ready` проверяет доступность PostgreSQL.
+
+## Тесты backend
+
+Unit/API набор:
+
+```bash
+make test-backend
+```
+
+Integration-набор с реальной БД:
+
+```bash
+BACKEND_DATABASE_URL=postgresql://postgres:postgres@localhost:55433/tg_maintenance make test-backend-integration
+```
+
+Перед integration tests БД должна быть поднята и мигрирована.
+
+## Проверки качества
+
+```bash
+make lint-backend
+make test-backend
+make test-backend-integration
+```
+
+## Контракты и документация
+
+- hand-written OpenAPI source of truth: `backend/docs/openapi.yaml`
+- текстовое пояснение к контрактам: `backend/docs/api-contracts.md`
+- обзорная точка входа из общего docs tree: `docs/tech/api-contracts.md`
