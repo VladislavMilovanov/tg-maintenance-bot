@@ -1,128 +1,122 @@
 # Onboarding
 
-Пошаговый гайд для нового участника проекта. Цель документа: за один сеанс понять структуру системы, подготовить окружение, поднять локальный стек, проверить работоспособность и знать, где читать код и документы дальше.
+Пошаговый гайд для нового участника проекта. Цель документа: за один сеанс понять структуру системы, поднять полный локальный стек через Docker Compose, проверить работоспособность и знать, где читать код и документы дальше.
 
-## 1. Клонирование и первичная настройка
+## 1. Что установить заранее
 
-```bash
-git clone <repo-url>
-cd tg-maintenance-bot
-make install
-cp .env.example .env
-make web-install
-```
+Основной full-stack путь требует:
+- Docker и Docker Compose
+- `make`
 
-Примечания:
-- `make install` рассчитан на свежий клон. Если `.venv` уже существует, команда завершится ошибкой на шаге `uv venv`; в таком случае достаточно обновить зависимости командой `uv pip install -e ".[dev]"`.
-- Перед `make db-up` должен быть запущен Docker daemon, иначе `docker compose` вернёт ошибку вида `Cannot connect to the Docker daemon`.
-
-Что нужно установить заранее:
+Для component-level host-run разработки дополнительно нужны:
 - Python `3.12+`
 - `uv`
-- Docker и Docker Compose
 - Node.js `>=20`
 - `pnpm`
 
 Проверить версии:
 
 ```bash
-python3 --version
-uv --version
 docker --version
 docker compose version
+make --version
+python3 --version
+uv --version
 node -v
 pnpm -v
 ```
 
-## 2. Настройка каждого компонента
-
-### Backend
-
-Заполнить в `.env` минимум:
-- `BACKEND_DATABASE_URL`
-- `BACKEND_OPENROUTER_API_KEY` только если нужен штатный LLM flow без fallback
-
-Подготовить БД:
+## 2. Первый запуск полного стека
 
 ```bash
-make db-up
-make db-migrate
-make db-import
-make db-check
+git clone <repo-url>
+cd tg-maintenance-bot
+cp .env.example .env
+make stack-build
+make stack-up
+make stack-ps
+make stack-health
 ```
 
-Запустить backend:
+Ожидаемый результат:
+- `postgres` и `backend` становятся healthy;
+- frontend доступен на `http://localhost:3000`;
+- `http://127.0.0.1:8000/health` возвращает `{"status":"ok"}`.
+
+Если нужен контейнер `bot`, после заполнения `TELEGRAM_BOT_TOKEN`:
 
 ```bash
-make run-backend
+make stack-build-bot
+make stack-up-bot
 ```
 
-Backend слушает `http://127.0.0.1:8000`.
+Подробный operational runbook: [docker-compose-local.md](docker-compose-local.md).
 
-### Frontend
+## 2a. Когда использовать registry-образы
 
-Frontend читает `NEXT_PUBLIC_API_URL`. Для локальной разработки можно использовать:
+Основной first-run путь остаётся local-build через `make stack-build` и `make stack-up`.
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+Registry-run нужен, когда нужно:
+- проверить опубликованные GHCR-образы без локальной сборки;
+- воспроизвести запуск на том же image contract, который публикуется workflow;
+- быстро поднять стек на машине, где исходники уже есть, но локальная сборка не нужна.
 
-Эта переменная хранится в `frontend/.env.local`. Если её не задать, frontend всё равно по умолчанию обращается к `http://localhost:8000`.
-
-Запуск:
+Базовые команды:
 
 ```bash
-make web-dev
+make stack-pull
+make stack-up-registry
 ```
 
-Frontend слушает `http://localhost:3000`.
+Если нужен `bot`:
 
-### Telegram Bot
+```bash
+make stack-up-registry-bot
+```
 
-Заполнить в `.env` минимум:
+По умолчанию используются образы:
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend:main`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend:main`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot:main`
+
+При необходимости можно переопределить `BACKEND_IMAGE`, `FRONTEND_IMAGE`, `BOT_IMAGE`.
+
+## 3. Что лежит в `.env`
+
+Создайте файл из шаблона:
+
+```bash
+cp .env.example .env
+```
+
+Минимум для default stack:
+- стандартные `POSTGRES_*` можно не менять;
+- `BACKEND_OPENROUTER_API_KEY` нужен только для штатного LLM flow без fallback;
+- `NEXT_PUBLIC_API_URL` по умолчанию остаётся `http://localhost:8000`.
+
+Дополнительно для `bot`:
 - `TELEGRAM_BOT_TOKEN`
-- `BACKEND_URL` если backend работает не на `http://127.0.0.1:8000`
-- `BACKEND_TIMEOUT_SECONDS` при необходимости
+- `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `WHISPER_MODEL` только для voice flow
 
-Для voice flow дополнительно нужны:
-- `OPENAI_API_KEY`
-- `OPENAI_BASE_URL`
-- `WHISPER_MODEL`
+## 4. Проверка, что всё работает
 
-Запуск:
+### Compose smoke-check
 
 ```bash
-make run
+make stack-ps
+make stack-health
 ```
 
-Исходный код Telegram-клиента находится в `src/maintenance_bot`. Папка `bot/` используется только для документации.
-Команда требует непустой `TELEGRAM_BOT_TOKEN`; без него приложение завершится ошибкой валидации конфигурации.
-
-## 3. Проверка, что всё работает
-
-### Backend smoke-check
-
-Проверить:
-
-```bash
-curl -s http://127.0.0.1:8000/health
-curl -s http://127.0.0.1:8000/ready
-```
-
-Ожидаемые ответы:
-
-```json
-{"status":"ok"}
-```
+Также должны открываться:
+- `http://localhost:3000`
+- `http://127.0.0.1:8000/ready`
+- `http://127.0.0.1:8000/docs`
+- `http://127.0.0.1:8000/openapi.json`
 
 Уточнение:
 - `/health` должен возвращать `{"status":"ok"}` сразу после успешного старта backend;
 - `/ready` возвращает `{"status":"ok"}` только если доступен PostgreSQL;
-- если backend поднят, но БД недоступна, `/ready` вернёт `503 Service Unavailable` с телом `{"code":"service_unavailable","message":"Service is not ready.","details":null,"trace_id":null}`.
-
-Также должны открываться:
-- `http://127.0.0.1:8000/docs`
-- `http://127.0.0.1:8000/openapi.json`
+- если backend поднят, но БД недоступна, `/ready` вернёт `503 Service Unavailable`.
 
 ### Frontend smoke-check
 
@@ -131,35 +125,54 @@ curl -s http://127.0.0.1:8000/ready
 3. Выполнить login по Telegram username
 4. Проверить, что открываются `/dashboard`, `/chat`, `/admin`
 
-Факт из кода:
-- login выполняется через `POST /api/v1/auth/login`;
-- backend возвращает bearer token как `access_token`;
-- пользователь затем читается через `GET /api/v1/auth/me`.
-
 ### Telegram Bot smoke-check
 
-1. Убедиться, что backend уже работает
-2. Отправить боту текстовое сообщение
-3. Проверить, что бот отвечает
-4. При наличии `OPENAI_API_KEY` отправить voice message и проверить транскрибацию
-
-Ожидаемое поведение:
-- если backend недоступен, бот возвращает сервисное сообщение;
-- если `BACKEND_OPENROUTER_API_KEY` не задан, assistant flow должен использовать fallback;
-- если `OPENAI_API_KEY` не задан, voice flow недоступен, но текстовый сценарий остаётся рабочим.
+1. Поднять стек с `make stack-up-bot`
+2. Убедиться, что `bot` контейнер не падает
+3. Отправить боту текстовое сообщение
+4. При наличии `OPENAI_API_KEY` проверить voice message
 
 ### Какие проверки требуют секретов
 
-- `make test-backend` не требует реальных Telegram/OpenRouter ключей
-- `make test` для bot-тестов не требует реального Telegram runtime
-- Telegram runtime требует `TELEGRAM_BOT_TOKEN`
-- voice flow требует `OPENAI_API_KEY`
-- штатный backend assistant flow требует `BACKEND_OPENROUTER_API_KEY`, иначе будет fallback
+- `make stack-up` не требует Telegram token;
+- `make stack-up-bot` требует `TELEGRAM_BOT_TOKEN`;
+- voice flow требует `OPENAI_API_KEY`;
+- штатный backend assistant flow требует `BACKEND_OPENROUTER_API_KEY`, иначе будет fallback.
 
-## 4. Куда смотреть в первую очередь
+## 5. Host-run fallback для точечной разработки
+
+Docker Compose является основным full-stack сценарием. Если нужно локально разрабатывать только один компонент, доступны host-run команды.
+
+### Backend
+
+```bash
+make install
+make db-up
+make db-migrate
+make db-import
+make run-backend
+```
+
+### Frontend
+
+```bash
+make web-install
+make web-dev
+```
+
+### Telegram Bot
+
+```bash
+make run
+```
+
+Исходный код Telegram-клиента находится в `src/maintenance_bot`. Папка `bot/` используется только для документации.
+
+## 6. Куда смотреть в первую очередь
 
 Документы:
 - `README.md` — быстрый вход
+- `docs/docker-compose-local.md` — source of truth для container workflow
 - `docs/architecture.md` — high-level архитектура и runtime-потоки
 - `docs/vision.md` — продуктовые границы
 - `docs/tech/api-contracts.md` — entrypoint в общую документацию по API-контрактам
@@ -173,20 +186,16 @@ curl -s http://127.0.0.1:8000/ready
 - `frontend/src/app` — маршруты и layouts frontend
 - `frontend/src/lib/api` — frontend API layer
 
-## 5. Рабочий процесс
+## 7. Рабочий процесс
 
 В проекте принята схема проектирования и реализации через документы:
 - `docs/plan.md` — roadmap на уровне крупных этапов;
 - iteration/task `plan.md` — план конкретной итерации или задачи;
 - iteration/task `summary.md` — итог выполненной работы.
 
-Важно:
-- это исторические и проектные артефакты;
-- они полезны для понимания эволюции системы;
-- они не являются основным onboarding source of truth;
-- для первого входа используйте `README.md`, `docs/onboarding.md`, `docs/architecture.md` и актуальные component README.
+Для первого входа используйте `README.md`, `docs/onboarding.md`, `docs/docker-compose-local.md`, `docs/architecture.md` и актуальные component README.
 
-## 6. Как готовить изменения
+## 8. Как готовить изменения
 
 Перед изменениями полезно сначала поднять локальный стек, а перед завершением прогнать проверки качества.
 
@@ -194,7 +203,12 @@ curl -s http://127.0.0.1:8000/ready
 
 Минимальное правило:
 - backend/API change -> проверить `backend/docs/api-contracts.md`, `docs/tech/api-contracts.md`, `docs/onboarding.md`;
-- startup/env/workflow change -> проверить `README.md`, `backend/README.md`, `docs/onboarding.md`.
+- startup/env/workflow change -> проверить `README.md`, `backend/README.md`, `docs/onboarding.md`, `docs/docker-compose-local.md`.
+
+Для image pipeline изменения дополнительно проверить:
+- `.github/workflows/ghcr-images.yml`;
+- `devops/compose/compose.registry.yaml`;
+- команды `Makefile`, связанные с registry-run.
 
 Пример prompt:
 
@@ -202,14 +216,16 @@ curl -s http://127.0.0.1:8000/ready
 Use $docs-updater to inspect the current diff, identify documentation drift, and update docs/tech/api-contracts.md plus any affected onboarding sections.
 ```
 
-### Telegram-клиент
+## 9. Проверки качества
+
+Telegram-клиент:
 
 ```bash
 make lint
 make test
 ```
 
-### Backend
+Backend:
 
 ```bash
 make lint-backend
@@ -217,7 +233,7 @@ make test-backend
 BACKEND_DATABASE_URL=postgresql://postgres:postgres@localhost:55433/tg_maintenance make test-backend-integration
 ```
 
-### Frontend
+Frontend:
 
 ```bash
 make web-lint

@@ -25,66 +25,83 @@ tg-maintenance-bot/
 ├── frontend/           # Next.js web-клиент
 ├── src/maintenance_bot # Telegram-клиент
 ├── bot/                # документация Telegram-слоя
-├── docs/               # архитектура, onboarding, roadmap, audit
-├── data/               # sample dataset для локального запуска
-├── compose.yaml        # локальный PostgreSQL
-├── Makefile            # единые dev-команды
+├── devops/             # Dockerfile и compose-related implementation artifacts
+├── docs/               # архитектура, onboarding, runbooks, roadmap
+├── compose.yaml        # основной local full-stack compose entrypoint
+├── Makefile            # короткие operator-facing команды
 └── .env.example        # шаблон локального окружения
 ```
 
 ## Prerequisites
 
-Для полного локального цикла нужны:
+Для основного локального цикла нужны:
+- Docker и Docker Compose
+- `make`
+
+Для component-level host-run разработки дополнительно нужны:
 - Python `3.12+`
 - [`uv`](https://docs.astral.sh/uv/)
-- Docker и Docker Compose
 - Node.js `>=20`
 - `pnpm`
 
 Проверить версии можно так:
 
 ```bash
-python3 --version
-uv --version
 docker --version
 docker compose version
+make --version
+python3 --version
+uv --version
 node -v
 pnpm -v
 ```
 
 ## Быстрый старт
 
-Локальный порядок запуска без обращения к `docs/tasks/`:
+Основной локальный путь для полного стека:
 
 ```bash
-make install
 cp .env.example .env
-make web-install
-make db-up
-make db-migrate
-make db-import
-make run-backend
-make web-dev
-make run
+make stack-build
+make stack-up
+make stack-ps
+make stack-health
 ```
 
-Примечания:
-- `make install` рассчитан на свежий клон. Если `.venv` уже существует, команда завершится ошибкой на шаге `uv venv`; для повторной установки зависимостей используйте `uv pip install -e ".[dev]"`.
-- Перед `make db-up` должен быть запущен Docker daemon, иначе `docker compose` вернёт ошибку вида `Cannot connect to the Docker daemon`.
-
 Что это делает:
-- `make install` создаёт `.venv` и ставит Python-зависимости;
-- `make web-install` ставит frontend-зависимости;
-- `make db-up` / `make db-migrate` / `make db-import` поднимают и подготавливают локальную БД;
-- `make run-backend` запускает FastAPI backend на `http://127.0.0.1:8000`;
-- `make web-dev` запускает frontend на `http://localhost:3000`;
-- `make run` запускает Telegram-бота.
+- `make stack-build` собирает контейнерные образы `backend` и `frontend`;
+- `make stack-up` поднимает `postgres`, `backend`, `frontend`;
+- `make stack-ps` показывает статусы контейнеров;
+- `make stack-health` проверяет backend по `http://127.0.0.1:8000/health`.
 
-Подробный пошаговый гайд для нового участника находится в [docs/onboarding.md](docs/onboarding.md).
+Если нужен Telegram-бот в контейнере:
+
+```bash
+make stack-build-bot
+make stack-up-bot
+```
+
+Для этого должен быть задан `TELEGRAM_BOT_TOKEN` в `.env`.
+
+Подробный runbook локального container workflow: [docs/docker-compose-local.md](docs/docker-compose-local.md). Пошаговый onboarding: [docs/onboarding.md](docs/onboarding.md).
+
+## GHCR Image Pipeline
+
+Workflow публикации образов находится в [.github/workflows/ghcr-images.yml](.github/workflows/ghcr-images.yml).
+
+Что он делает:
+- на `pull_request` в `main` только проверяет сборку `backend`, `frontend`, `bot` без push;
+- на `push` в `main` публикует теги `main` и `sha-*`;
+- на semver tags `v*.*.*` публикует `<version>`, `latest` и `sha-*`.
+
+Имена образов:
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot`
+
+Базовый auth path для publish — `GITHUB_TOKEN` того же репозитория. Для работы workflow у GitHub Actions должны быть права на запись package artifacts в GHCR.
 
 ## Переменные окружения
-
-### Обязательные для базового цикла
 
 Файл создаётся из шаблона:
 
@@ -92,112 +109,130 @@ make run
 cp .env.example .env
 ```
 
-Минимум для запуска:
-- `TELEGRAM_BOT_TOKEN` — для Telegram-бота;
-- `BACKEND_DATABASE_URL` — для backend и integration tests.
+Минимум для default stack:
+- дефолтные `POSTGRES_*` можно оставить как есть;
+- `NEXT_PUBLIC_API_URL` по умолчанию остаётся `http://localhost:8000`;
+- `BACKEND_OPENROUTER_API_KEY` нужен только для штатного LLM flow без fallback.
 
-### Опциональные для backend
-
-- `BACKEND_OPENROUTER_API_KEY` — нужен для штатного LLM flow;
-- без него backend должен отдавать fallback-ответ там, где это предусмотрено assistant flow.
-
-### Опциональные для голосового ввода в Telegram
-
-- `OPENAI_API_KEY`
-- `OPENAI_BASE_URL`
-- `WHISPER_MODEL`
-
-### Frontend
-
-Frontend использует:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-Эта переменная хранится в `frontend/.env.local` и по умолчанию frontend уже смотрит в `http://localhost:8000`.
+Дополнительно для `bot`:
+- `TELEGRAM_BOT_TOKEN`
+- `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `WHISPER_MODEL` только для voice flow
 
 ## Проверка, что всё работает
 
-### Backend
+После `make stack-up`:
+- frontend должен открываться на `http://localhost:3000`;
+- `http://127.0.0.1:8000/health` должен возвращать `{"status":"ok"}`;
+- `http://127.0.0.1:8000/ready` должен возвращать `{"status":"ok"}` при доступной БД;
+- `docker compose ps` должен показывать healthy `postgres` и `backend`.
 
-После `make run-backend` доступны:
-- `http://127.0.0.1:8000/health`
-- `http://127.0.0.1:8000/ready`
-- `http://127.0.0.1:8000/docs`
-- `http://127.0.0.1:8000/openapi.json`
+Дополнительно для запуска с bot profile:
+- контейнер `bot` не должен падать при валидно заданном `TELEGRAM_BOT_TOKEN`.
 
-Ожидаемые признаки успеха:
-- `/health` возвращает `{"status":"ok"}`;
-- `/ready` возвращает `{"status":"ok"}` при доступном PostgreSQL;
-- `/ready` возвращает `503 Service Unavailable`, если backend поднят, но PostgreSQL недоступен;
-- `/docs` и `/openapi.json` публикуют runtime API.
+## Host-run fallback
 
-### Frontend
+Component-level host-run сценарии сохранены для точечной разработки:
+- `make install`
+- `make run-backend`
+- `make run`
+- `make web-install`
+- `make web-dev`
 
-После `make web-dev`:
-1. открыть `http://localhost:3000`;
-2. убедиться, что root ведёт на `/dashboard`;
-3. выполнить login по Telegram username;
-4. проверить страницы `/dashboard`, `/chat`, `/admin`.
+Это не основной first-run путь полного стека. Используйте его только когда нужно разрабатывать или диагностировать конкретный компонент вне compose-сценария.
 
-### Telegram-бот
+## Тесты и проверки качества
 
-После `make run`:
-1. отправить сообщение боту в Telegram;
-2. убедиться, что бот отвечает через backend;
-3. при наличии `OPENAI_API_KEY` дополнительно проверить voice message.
-
-Для самого запуска `make run` обязателен непустой `TELEGRAM_BOT_TOKEN`.
-
-## Тесты
-
-### Telegram-клиент
-
-```bash
-make test
-```
-
-### Backend
-
-```bash
-make test-backend
-```
-
-### Backend integration с PostgreSQL
-
-```bash
-BACKEND_DATABASE_URL=postgresql://postgres:postgres@localhost:55433/tg_maintenance make test-backend-integration
-```
-
-### Frontend
-
-Отдельный automated test suite для frontend в текущем репозитории не настроен.
-
-## Проверки качества
-
-### Telegram-клиент
+Telegram-клиент:
 
 ```bash
 make lint
+make test
 ```
 
-### Backend
+Backend:
 
 ```bash
 make lint-backend
 make test-backend
-make test-backend-integration
+BACKEND_DATABASE_URL=postgresql://postgres:postgres@localhost:55433/tg_maintenance make test-backend-integration
 ```
 
-### Frontend
+Frontend:
 
 ```bash
 make web-lint
 make web-build
 ```
 
-`web-build` используется как дополнительная smoke-проверка сборки.
+Контейнерный smoke-check:
+
+```bash
+make stack-build
+make stack-up
+make stack-health
+make stack-down
+```
+
+## Основные make-команды
+
+Full-stack compose lifecycle:
+- `make stack-build`
+- `make stack-build-bot`
+- `make stack-pull`
+- `make stack-up`
+- `make stack-up-bot`
+- `make stack-up-registry`
+- `make stack-up-registry-bot`
+- `make stack-ps`
+- `make stack-logs`
+- `make stack-logs-backend`
+- `make stack-health`
+- `make stack-down`
+- `make stack-clean`
+
+Component-level fallback:
+- `make install`
+- `make run-backend`
+- `make run`
+- `make web-install`
+- `make web-dev`
+
+Database-only workflow:
+- `make db-up`
+- `make db-down`
+- `make db-reset`
+- `make db-migrate`
+- `make db-downgrade`
+- `make db-import`
+- `make db-check`
+- `make db-psql`
+
+## Документация
+
+- [docs/docker-compose-local.md](docs/docker-compose-local.md) — source of truth для container workflow
+- [docs/onboarding.md](docs/onboarding.md) — пошаговый гайд для нового участника
+- [docs/architecture.md](docs/architecture.md) — high-level архитектура и runtime-потоки
+- [docs/vision.md](docs/vision.md) — продуктовое видение и границы системы
+- [docs/plan.md](docs/plan.md) — roadmap проекта, а не operational entrypoint
+- [docs/data-model.md](docs/data-model.md) — проектная модель данных и её границы
+- [docs/integrations.md](docs/integrations.md) — внешние интеграции и протоколы
+- [docs/tech/api-contracts.md](docs/tech/api-contracts.md) — точка входа к API-контрактам
+- [docs/doc-audit.md](docs/doc-audit.md) — живой аудит документации и открытых несоответствий
+
+Дополнительный registry-based запуск:
+
+```bash
+make stack-pull
+make stack-up-registry
+```
+
+Если нужен `bot` на опубликованных образах:
+
+```bash
+make stack-up-registry-bot
+```
+
+Этот режим нужен для проверки опубликованных GHCR-образов и не заменяет основной first-run path с локальной сборкой.
 
 ## Документационный review
 
@@ -209,41 +244,6 @@ make web-build
 - изменились команды запуска, порты, env-переменные или onboarding-шаги.
 
 Точка входа и пример вызова описаны в [.agents/README.md](.agents/README.md).
-
-## Основные make-команды
-
-- `make install`
-- `make run`
-- `make run-backend`
-- `make test`
-- `make test-backend`
-- `make test-backend-integration`
-- `make lint`
-- `make lint-backend`
-- `make db-up`
-- `make db-down`
-- `make db-reset`
-- `make db-migrate`
-- `make db-downgrade`
-- `make db-import`
-- `make db-check`
-- `make db-psql`
-- `make web-install`
-- `make web-dev`
-- `make web-build`
-- `make web-lint`
-
-## Документация
-
-- [docs/onboarding.md](docs/onboarding.md) — пошаговый гайд для нового участника
-- [docs/architecture.md](docs/architecture.md) — high-level архитектура и runtime-потоки
-- [docs/vision.md](docs/vision.md) — продуктовое видение и границы системы
-- [docs/plan.md](docs/plan.md) — roadmap проекта, а не operational entrypoint
-- [docs/data-model.md](docs/data-model.md) — проектная модель данных и её границы
-- [docs/integrations.md](docs/integrations.md) — внешние интеграции и протоколы
-- [docs/tech/api-contracts.md](docs/tech/api-contracts.md) — точка входа к API-контрактам
-- [docs/doc-audit.md](docs/doc-audit.md) — живой аудит документации и открытых несоответствий
-- [.agents/README.md](.agents/README.md) — локальные subagent'ы и пример запуска `docs-updater`
 
 ## Источники истины
 

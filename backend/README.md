@@ -2,6 +2,8 @@
 
 FastAPI backend является единым ядром системы. Он обслуживает Telegram-бота и web-клиент, работает с PostgreSQL и выполняет LLM-интеграцию.
 
+Для полного локального стека основной путь теперь проходит через root `compose.yaml` и `make stack-*`. Этот README описывает backend-specific и host-run workflow, который остаётся fallback для точечной разработки и диагностики.
+
 ## Что относится к backend
 
 - код: `backend/src/maintenance_backend`
@@ -14,6 +16,7 @@ FastAPI backend является единым ядром системы. Он о
 - Python `3.12+`
 - `uv`
 - Docker и Docker Compose
+- `make`
 
 ## Настройка
 
@@ -37,6 +40,8 @@ cp .env.example .env
 
 ## Локальный DB workflow
 
+Это backend-only fallback workflow. Для полного локального стека используйте `make stack-build` и `make stack-up` из корня репозитория.
+
 ```bash
 make db-up
 make db-migrate
@@ -57,6 +62,8 @@ make db-check
 - `make db-psql`
 
 ## Запуск backend
+
+Host-run запуск backend:
 
 ```bash
 make run-backend

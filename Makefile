@@ -1,6 +1,7 @@
-.PHONY: install run run-backend backend-run lint lint-backend backend-lint format test test-backend backend-test test-backend-integration backend-test-integration db-up db-down db-reset db-migrate db-downgrade db-import db-check db-psql web-install web-dev web-build web-lint
+.PHONY: install run run-backend backend-run lint lint-backend backend-lint format test test-backend backend-test test-backend-integration backend-test-integration db-up db-down db-reset db-migrate db-downgrade db-import db-check db-psql stack-build stack-build-bot stack-pull stack-up stack-up-bot stack-up-registry stack-up-registry-bot stack-down stack-clean stack-ps stack-logs stack-logs-% stack-health web-install web-dev web-build web-lint
 
 COMPOSE = docker compose
+REGISTRY_COMPOSE = docker compose -f compose.yaml -f devops/compose/compose.registry.yaml
 ALEMBIC = UV_CACHE_DIR=.uv-cache PYTHONPATH=backend/src uv run --no-sync alembic
 DB_TOOL = UV_CACHE_DIR=.uv-cache PYTHONPATH=backend/src uv run --no-sync python -m
 
@@ -64,6 +65,45 @@ db-check:
 
 db-psql:
 	$(COMPOSE) exec postgres psql -U postgres -d tg_maintenance
+
+stack-build:
+	$(COMPOSE) build backend frontend
+
+stack-build-bot:
+	$(COMPOSE) build backend frontend bot
+
+stack-pull:
+	$(REGISTRY_COMPOSE) pull backend frontend
+
+stack-up:
+	$(COMPOSE) up -d postgres backend frontend
+
+stack-up-bot:
+	COMPOSE_PROFILES=bot $(COMPOSE) up -d postgres backend frontend bot
+
+stack-up-registry:
+	$(REGISTRY_COMPOSE) up -d postgres backend frontend
+
+stack-up-registry-bot:
+	COMPOSE_PROFILES=bot $(REGISTRY_COMPOSE) up -d postgres backend frontend bot
+
+stack-down:
+	$(COMPOSE) down
+
+stack-clean:
+	$(COMPOSE) down -v --remove-orphans
+
+stack-ps:
+	$(COMPOSE) ps
+
+stack-logs:
+	$(COMPOSE) logs -f --tail=200
+
+stack-health:
+	curl -fsS http://127.0.0.1:$${BACKEND_PORT:-8000}/health
+
+stack-logs-%:
+	$(COMPOSE) logs -f --tail=200 $*
 
 # ── Frontend ──────────────────────────────────────────────
 web-install:

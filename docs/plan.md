@@ -30,7 +30,7 @@
 | 2 | Telegram MVP client | Вывести Telegram-бота на работу через backend API | ✅ Done | [tasklist-backend](tasks/tasklist-backend.md) |
 | 3 | Frontend unified client | Запустить единый frontend-интерфейс для админа и пользователя | 📋 Planned | tasklist будет выделен отдельно |
 | 4 | Monitoring and LLM integrations | Подключить внешние источники мониторинга и интерпретацию через LLM | 📋 Planned | tasklist будет выделен отдельно |
-| 5 | Platform readiness | Довести платформу до эксплуатационной готовности и согласованных правил изменений | 📋 Planned | tasklist будет выделен отдельно |
+| 5 | Platform readiness | Довести платформу до эксплуатационной готовности и согласованных правил изменений | 📋 Planned | [tasklist-devops](tasks/tasklist-devops.md) |
 
 ---
 
@@ -153,9 +153,10 @@
 - настроены базовые инженерные практики: тесты, линтеры, минимальная наблюдаемость, единые сценарии локального запуска;
 - `vision.md`, `data-model.md`, `integrations.md` актуализированы по фактической реализации.
 
-Связь с tasklist: tasklist будет выделен отдельно по мере формализации platform readiness.
+Связь с tasklist: [docs/tasks/tasklist-devops.md](tasks/tasklist-devops.md)
 
 Полезный результат: продукт готов к предсказуемой поддержке и масштабированию без потери целостности архитектуры.
 
 Артефакты:
+- `docs/tasks/tasklist-devops.md`
 - обновления `docs/vision.md`, `docs/data-model.md`, `docs/integrations.md`
