@@ -27,13 +27,13 @@ jobs:
       matrix:
         service:
           - name: backend
-            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend
+            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot/backend
             dockerfile: devops/backend/Dockerfile
           - name: frontend
-            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend
+            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot/frontend
             dockerfile: devops/frontend/Dockerfile
           - name: bot
-            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot
+            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot/bot
             dockerfile: devops/bot/Dockerfile
     steps:
       - name: Checkout
@@ -64,13 +64,13 @@ jobs:
       matrix:
         service:
           - name: backend
-            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend
+            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot/backend
             dockerfile: devops/backend/Dockerfile
           - name: frontend
-            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend
+            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot/frontend
             dockerfile: devops/frontend/Dockerfile
           - name: bot
-            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot
+            image: ghcr.io/vladislavmilovanov/tg-maintenance-bot/bot
             dockerfile: devops/bot/Dockerfile
     steps:
       - name: Checkout

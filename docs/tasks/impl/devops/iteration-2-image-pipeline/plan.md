@@ -35,9 +35,9 @@
 - trusted publish events: `push` в `main` и semver tags `v*.*.*`;
 - `pull_request` выполняет только build validation без push;
 - публикуются три отдельных image artifacts:
-  - `ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend`
-  - `ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend`
-  - `ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot`
+  - `ghcr.io/vladislavmilovanov/tg-maintenance-bot/backend`
+  - `ghcr.io/vladislavmilovanov/tg-maintenance-bot/frontend`
+  - `ghcr.io/vladislavmilovanov/tg-maintenance-bot/bot`
 - root `compose.yaml` остаётся основным entrypoint;
 - registry runtime включается через merge с `devops/compose/compose.registry.yaml`, а не через второй основной compose-файл;
 - `postgres` остаётся локальным compose service и не публикуется в GHCR.

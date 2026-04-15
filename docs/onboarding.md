@@ -75,9 +75,9 @@ make stack-up-registry-bot
 ```
 
 По умолчанию используются образы:
-- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend:main`
-- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend:main`
-- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot:main`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot/backend:main`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot/frontend:main`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot/bot:main`
 
 При необходимости можно переопределить `BACKEND_IMAGE`, `FRONTEND_IMAGE`, `BOT_IMAGE`.
 

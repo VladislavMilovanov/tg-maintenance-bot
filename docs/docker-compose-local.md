@@ -73,16 +73,16 @@ make stack-up-registry-bot
 ```
 
 По умолчанию используются теги `:main`:
-- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend:main`
-- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend:main`
-- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot:main`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot/backend:main`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot/frontend:main`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot/bot:main`
 
 Для запуска на другом published tag можно переопределить env-переменные:
 
 ```bash
-BACKEND_IMAGE=ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend:0.1.0 \
-FRONTEND_IMAGE=ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend:0.1.0 \
-BOT_IMAGE=ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot:0.1.0 \
+BACKEND_IMAGE=ghcr.io/vladislavmilovanov/tg-maintenance-bot/backend:0.1.0 \
+FRONTEND_IMAGE=ghcr.io/vladislavmilovanov/tg-maintenance-bot/frontend:0.1.0 \
+BOT_IMAGE=ghcr.io/vladislavmilovanov/tg-maintenance-bot/bot:0.1.0 \
 make stack-up-registry
 ```
 

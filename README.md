@@ -95,9 +95,9 @@ Workflow публикации образов находится в [.github/work
 - на semver tags `v*.*.*` публикует `<version>`, `latest` и `sha-*`.
 
 Имена образов:
-- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend`
-- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend`
-- `ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot/backend`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot/frontend`
+- `ghcr.io/vladislavmilovanov/tg-maintenance-bot/bot`
 
 Базовый auth path для publish — `GITHUB_TOKEN` того же репозитория. Для работы workflow у GitHub Actions должны быть права на запись package artifacts в GHCR.
 

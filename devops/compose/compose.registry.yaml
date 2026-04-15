@@ -1,12 +1,12 @@
 services:
   backend:
     build: !reset null
-    image: ${BACKEND_IMAGE:-ghcr.io/vladislavmilovanov/tg-maintenance-bot-backend:main}
+    image: ${BACKEND_IMAGE:-ghcr.io/vladislavmilovanov/tg-maintenance-bot/backend:main}
 
   frontend:
     build: !reset null
-    image: ${FRONTEND_IMAGE:-ghcr.io/vladislavmilovanov/tg-maintenance-bot-frontend:main}
+    image: ${FRONTEND_IMAGE:-ghcr.io/vladislavmilovanov/tg-maintenance-bot/frontend:main}
 
   bot:
     build: !reset null
-    image: ${BOT_IMAGE:-ghcr.io/vladislavmilovanov/tg-maintenance-bot-bot:main}
+    image: ${BOT_IMAGE:-ghcr.io/vladislavmilovanov/tg-maintenance-bot/bot:main}
