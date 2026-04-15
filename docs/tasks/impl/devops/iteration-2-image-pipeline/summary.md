@@ -13,6 +13,13 @@
 - в `Makefile` добавлены команды `stack-pull`, `stack-up-registry`, `stack-up-registry-bot`;
 - docs синхронизированы так, чтобы local-build оставался default first-run path, а registry-run был отдельным operational сценарием.
 
+## Проверки
+
+- workflow YAML проходит синтаксическую проверку и не содержит publish-step на `pull_request`;
+- merged compose config для `compose.yaml` и `devops/compose/compose.registry.yaml` переключает runtime-сервисы на GHCR `image:` без второго main entrypoint;
+- `make -n stack-pull stack-up-registry stack-up-registry-bot` подтверждает operator-facing contract для registry-run;
+- после push в `origin/main` GitHub создал первый run workflow `GHCR Images` на событии `push`.
+
 ## Review gates
 
 - workflow и tagging strategy спроектированы с явной опорой на skill `github-actions-templates`;

@@ -55,9 +55,9 @@ flowchart LR
 | 05 | Отдельная инструкция по локальному запуску через Docker Compose | ✅ Done | [plan](impl/devops/iteration-1-local-stack/tasks/task-05-compose-local-runbook/plan.md) \| [summary](impl/devops/iteration-1-local-stack/tasks/task-05-compose-local-runbook/summary.md) |
 | 06 | Обновление проектной документации под новый compose entrypoint | ✅ Done | [plan](impl/devops/iteration-1-local-stack/tasks/task-06-docs-sync/plan.md) \| [summary](impl/devops/iteration-1-local-stack/tasks/task-06-docs-sync/summary.md) |
 | 07 | Review итоговой Docker-конфигурации через `docker-expert` | ✅ Done | [plan](impl/devops/iteration-1-local-stack/tasks/task-07-docker-review/plan.md) \| [summary](impl/devops/iteration-1-local-stack/tasks/task-07-docker-review/summary.md) |
-| 08 | GitHub Actions workflow сборки и публикации образов в GHCR | 📋 Planned | [plan](impl/devops/iteration-2-image-pipeline/tasks/task-08-ghcr-workflow/plan.md) \| [summary](impl/devops/iteration-2-image-pipeline/tasks/task-08-ghcr-workflow/summary.md) |
-| 09 | Адаптация compose для запуска на образах из registry | 📋 Planned | [plan](impl/devops/iteration-2-image-pipeline/tasks/task-09-compose-registry-images/plan.md) \| [summary](impl/devops/iteration-2-image-pipeline/tasks/task-09-compose-registry-images/summary.md) |
-| 10 | Документация по GHCR, тегам образов и локальному запуску с registry | 📋 Planned | [plan](impl/devops/iteration-2-image-pipeline/tasks/task-10-registry-docs/plan.md) \| [summary](impl/devops/iteration-2-image-pipeline/tasks/task-10-registry-docs/summary.md) |
+| 08 | GitHub Actions workflow сборки и публикации образов в GHCR | ✅ Done | [plan](impl/devops/iteration-2-image-pipeline/tasks/task-08-ghcr-workflow/plan.md) \| [summary](impl/devops/iteration-2-image-pipeline/tasks/task-08-ghcr-workflow/summary.md) |
+| 09 | Адаптация compose для запуска на образах из registry | ✅ Done | [plan](impl/devops/iteration-2-image-pipeline/tasks/task-09-compose-registry-images/plan.md) \| [summary](impl/devops/iteration-2-image-pipeline/tasks/task-09-compose-registry-images/summary.md) |
+| 10 | Документация по GHCR, тегам образов и локальному запуску с registry | ✅ Done | [plan](impl/devops/iteration-2-image-pipeline/tasks/task-10-registry-docs/plan.md) \| [summary](impl/devops/iteration-2-image-pipeline/tasks/task-10-registry-docs/summary.md) |
 
 ## Итерация 1: Local Docker Compose Stack ✅
 
@@ -327,7 +327,7 @@ flowchart LR
 
 ---
 
-## Итерация 2: Image Pipeline via GitHub Actions 📋
+## Итерация 2: Image Pipeline via GitHub Actions ✅
 
 ### Цель
 
@@ -340,7 +340,7 @@ flowchart LR
 
 ---
 
-## Задача 08: GitHub Actions workflow сборки и публикации образов в GHCR 📋
+## Задача 08: GitHub Actions workflow сборки и публикации образов в GHCR ✅
 
 ### Цель
 
@@ -348,11 +348,11 @@ flowchart LR
 
 ### Состав работ
 
-- [ ] Использовать skill `github-actions-templates` для проектирования workflow.
-- [ ] Создать workflow в `.github/workflows/` только для build/publish образов.
-- [ ] Описать trigger'ы, permissions, registry auth и tagging strategy.
-- [ ] Зафиксировать, какие образы публикуются и как они именуются в `ghcr.io`.
-- [ ] Не смешивать этот workflow с тестами, линтами и deployment automation, если это не требуется для публикации образов.
+- [x] Использовать skill `github-actions-templates` для проектирования workflow.
+- [x] Создать workflow в `.github/workflows/` только для build/publish образов.
+- [x] Описать trigger'ы, permissions, registry auth и tagging strategy.
+- [x] Зафиксировать, какие образы публикуются и как они именуются в `ghcr.io`.
+- [x] Не смешивать этот workflow с тестами, линтами и deployment automation, если это не требуется для публикации образов.
 
 ### Артефакты
 
@@ -376,7 +376,7 @@ flowchart LR
 
 ---
 
-## Задача 09: Адаптация compose для запуска на образах из registry 📋
+## Задача 09: Адаптация compose для запуска на образах из registry ✅
 
 ### Цель
 
@@ -384,10 +384,10 @@ flowchart LR
 
 ### Состав работ
 
-- [ ] Провести review compose-сценария для запуска на облачных образах.
-- [ ] Адаптировать текущий root compose entrypoint или его параметры так, чтобы не плодить второй основной compose-файл без явной необходимости.
-- [ ] Проверить сценарий запуска полного стека на образах из GHCR.
-- [ ] Зафиксировать различия между local-build и registry-image режимами запуска.
+- [x] Провести review compose-сценария для запуска на облачных образах.
+- [x] Адаптировать текущий root compose entrypoint или его параметры так, чтобы не плодить второй основной compose-файл без явной необходимости.
+- [x] Проверить сценарий запуска полного стека на образах из GHCR.
+- [x] Зафиксировать различия между local-build и registry-image режимами запуска.
 
 ### Артефакты
 
@@ -411,7 +411,7 @@ flowchart LR
 
 ---
 
-## Задача 10: Документация по GHCR, тегам образов и локальному запуску с registry 📋
+## Задача 10: Документация по GHCR, тегам образов и локальному запуску с registry ✅
 
 ### Цель
 
@@ -419,11 +419,11 @@ flowchart LR
 
 ### Состав работ
 
-- [ ] Задокументировать, где лежит workflow публикации образов.
-- [ ] Описать требуемые secrets и permissions для GHCR.
-- [ ] Описать схему тегов образов и правила чтения этих тегов человеком.
-- [ ] Добавить инструкцию по локальному запуску полного стека на образах из registry.
-- [ ] Синхронизировать README/onboarding и DevOps-документацию с новым pipeline.
+- [x] Задокументировать, где лежит workflow публикации образов.
+- [x] Описать требуемые secrets и permissions для GHCR.
+- [x] Описать схему тегов образов и правила чтения этих тегов человеком.
+- [x] Добавить инструкцию по локальному запуску полного стека на образах из registry.
+- [x] Синхронизировать README/onboarding и DevOps-документацию с новым pipeline.
 
 ### Артефакты
 
