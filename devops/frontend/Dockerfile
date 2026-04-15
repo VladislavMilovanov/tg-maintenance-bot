@@ -28,7 +28,6 @@ COPY --from=deps /app/frontend/node_modules ./node_modules
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 COPY frontend/components.json ./components.json
 COPY frontend/eslint.config.mjs ./eslint.config.mjs
-COPY frontend/next-env.d.ts ./next-env.d.ts
 COPY frontend/next.config.ts ./next.config.ts
 COPY frontend/postcss.config.mjs ./postcss.config.mjs
 COPY frontend/tsconfig.json ./tsconfig.json
