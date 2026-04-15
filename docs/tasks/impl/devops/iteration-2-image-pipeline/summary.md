@@ -9,6 +9,7 @@
 - добавлен workflow `.github/workflows/ghcr-images.yml`, спроектированный по принципам `github-actions-templates`;
 - publish path ограничен trusted events: `main` и semver tags;
 - PR workflow выполняет только build validation без публикации;
+- publish workflow выпускает multi-arch manifests для `linux/amd64` и `linux/arm64`;
 - для compose добавлен registry override `devops/compose/compose.registry.yaml`;
 - в `Makefile` добавлены команды `stack-pull`, `stack-up-registry`, `stack-up-registry-bot`;
 - docs синхронизированы так, чтобы local-build оставался default first-run path, а registry-run был отдельным operational сценарием.
@@ -18,7 +19,8 @@
 - workflow YAML проходит синтаксическую проверку и не содержит publish-step на `pull_request`;
 - merged compose config для `compose.yaml` и `devops/compose/compose.registry.yaml` переключает runtime-сервисы на GHCR `image:` без второго main entrypoint;
 - `make -n stack-pull stack-up-registry stack-up-registry-bot` подтверждает operator-facing contract для registry-run;
-- после push в `origin/main` GitHub создал первый run workflow `GHCR Images` на событии `push`.
+- после push в `origin/main` GitHub создал и успешно завершил workflow `GHCR Images`;
+- подтверждён зелёный publish для `backend`, `frontend` и `bot` в run `#4` на commit `0643063`.
 
 ## Review gates
 

@@ -22,7 +22,7 @@
 - deployment automation;
 - удалённые окружения;
 - production hardening beyond текущего runtime contract;
-- multi-arch build.
+- расширенный platform matrix beyond `linux/amd64` и `linux/arm64`.
 
 ## Обязательные skills
 

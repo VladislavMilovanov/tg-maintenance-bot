@@ -9,6 +9,7 @@
 - `pull_request` в `main` -> только build validation без push;
 - `push` в `main` -> publish с тегами `main` и `sha-*`;
 - `push` semver tag `v*.*.*` -> publish с тегами `<version>`, `latest`, `sha-*`;
+- publish job собирает multi-arch manifests для `linux/amd64` и `linux/arm64`;
 - `packages: write` ограничен publish job;
 - для каждого сервиса задан явный `dockerfile` и отдельный GHCR image name.
 
@@ -16,7 +17,8 @@
 
 - workflow YAML валиден;
 - publish path вынесен только в job для `push`;
-- после публикации workflow в удалённый репозиторий GitHub создал run `GHCR Images` на ветке `main`.
+- после публикации workflow в удалённый репозиторий GitHub создал run `GHCR Images` на ветке `main`;
+- финальный run `#4` завершился успешно для `Publish (backend)`, `Publish (frontend)` и `Publish (bot)`.
 
 ## Почему решение соответствует scope
 
