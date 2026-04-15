@@ -335,7 +335,7 @@ flowchart LR
 
 ### Acceptance Snapshot
 
-- `self-check`: workflow валиден, собирает и публикует образы в GHCR по заданным trigger'ам; compose запускает стек на registry-образах.
+- `self-check`: workflow валиден, собирает и публикует образы в GHCR по заданным trigger'ам; подтверждён зелёный publish `backend`, `frontend`, `bot`; compose запускает стек на registry-образах.
 - `user-check`: человек находит workflow, понимает схему тегов и запускает локальный compose-сценарий на опубликованных образах.
 
 ---
